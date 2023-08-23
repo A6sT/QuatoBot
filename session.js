@@ -1,5 +1,6 @@
 import DB from './db.js';
 import axios from 'axios';
+import Chart from './chart.js';
 import { EmbedBuilder } from 'discord.js';
 import { getLocale, getRatingColor, convertIntegerToTime, convertIntegerToString, client } from './index.js';
 
@@ -13,7 +14,7 @@ export async function manageSessions() {
     const expiredSessions = await DB.getExpiredSessions();
     expiredSessions.forEach(async (session) => {
 
-        // On affiche uniquement le résumé pour les sessions ayant au moins 5 score
+        // On affiche uniquement le rï¿½sumï¿½ pour les sessions ayant au moins 5 score
         if (session.scores.length >= 5) {
             const user = await DB.getUser(session.discordId);
             const servers = await DB.getServersList(user == null ? null : user.server);
@@ -41,9 +42,9 @@ export async function manageSessions() {
     })
 }
 
-// Afficher la session d'un utilisateur (terminé ou non)
+// Afficher la session d'un utilisateur (terminï¿½ ou non)
 export async function showSession(lang, channel, session, interaction = null, commentaire = null) {
-    // Récuperer les infos sur l'utilisateur de la session
+    // Rï¿½cuperer les infos sur l'utilisateur de la session
     const user = await DB.getUser(session.discordId);
     let player, playerInfo;
 
@@ -52,7 +53,7 @@ export async function showSession(lang, channel, session, interaction = null, co
         playerInfo = player.info;
     })
 
-    // Préparation des infos pour résumer la session
+    // Prï¿½paration des infos pour rï¿½sumer la session
     let performanceRating, difficulty, accuracy, accuracryWithFail, maxCombo, ratio, pbAmount, fcAmount, mapPlayed, mapFailed, graphModes, graphPr, graphGrades, graphDiff, graphAcc;
     performanceRating = difficulty = accuracy = accuracryWithFail = maxCombo = ratio = pbAmount = fcAmount = mapPlayed = mapFailed = 0;
     graphModes = [];
@@ -116,7 +117,7 @@ export async function showSession(lang, channel, session, interaction = null, co
         difficulty = "0.00";
     }
 
-    // Création des fields pour l'embed de la session
+    // Crï¿½ation des fields pour l'embed de la session
     if (commentaire == null) {
         commentaire = getLocale(lang, "embedSessionDefaultCommentary", `<@${user.discordId}>`);
     }
@@ -141,7 +142,7 @@ export async function showSession(lang, channel, session, interaction = null, co
     fields.push({ name: getLocale(lang, "embedSessionFCs"), value: fcAmount.toString(), inline: true })
     // ?
     fields.push(blank);
-    // Maps joués
+    // Maps jouï¿½s
     fields.push({ name: getLocale(lang, "embedSessionMapPlayed"), value: mapPlayed.toString(), inline: true });
     // Maps fail
     fields.push({ name: getLocale(lang, "embedSessionMapFailed"), value: mapFailed.toString(), inline: true });
@@ -182,7 +183,7 @@ export async function showSession(lang, channel, session, interaction = null, co
     if (playerInfo.avatar_url != null) {
         embedAbstract.setThumbnail(`${playerInfo.avatar_url}`);
     }
-    const sessionGraph = Chart.createSessionGraph(graphModes, graphPr, graphGrades, graphDiff, graphAcc); // Création du graphique
+    const sessionGraph = Chart.createSessionGraph(graphModes, graphPr, graphGrades, graphDiff, graphAcc); // Crï¿½ation du graphique
     embedAbstract.setImage(await sessionGraph.getShortUrl());
 
     // Si la demande de vision de session est issue d'une interaction (/showSession)

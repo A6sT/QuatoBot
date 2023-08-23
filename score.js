@@ -1,12 +1,35 @@
 ﻿import DB from './db.js';
 import axios from 'axios';
 import { EmbedBuilder } from 'discord.js';
-import { getLocale, getGradeColor, convertIntegerToString, client } from './index.js';
+import { getLocale, getGradeColor, isScoreFiltered, convertIntegerToString, client } from './index.js';
+import WebSocket from 'ws';
 
+const ws = new WebSocket('ws://www.host.com/path');
 
-// Récuperer et afficher les scores de tout les joueurs link au bot
+ws.on('error', console.error);
 
-/* For websocket implementation, score foudn response will be like:
+ws.on('open', function open() {
+    console.log("connexion established");
+});
+
+ws.on('message', function message(data) {
+    console.log('received: %s', data);
+    if (data == null || data.type == null) { return; }
+    switch (data.type) {
+        case "new_score":
+            console.log("new score found, this is epic !!!!!!!");
+            // 1. Il faut modifier la fonction registerNewScores pour que le résultat de cette requete y soit adapté
+            // 2. Appeller la fonction seekNewScores (renommer en newScoreProcess) et appeler directement registerNewScores, puis enchainer le process habituel
+            break;
+        case "connected":
+            console.log("Now listening for new scores");
+            break;
+        default:
+            break;
+    }
+});
+// Important: il faut faire attention au cas des utilisateurs qui se register au bot pour les ajouter sur le listener
+/* For websocket implementation, score found response will be like:
 {
     "type": "new_score",
     "data": {
@@ -29,6 +52,8 @@ import { getLocale, getGradeColor, convertIntegerToString, client } from './inde
     }
 }
 */
+
+// Récuperer et afficher les scores de tout les joueurs link au bot
 export async function main() {
 
     const users = [];
