@@ -303,16 +303,12 @@ export async function linkAccount(serverId, discordId, username, discordTag, qua
 
         // Si le profile n'est associé a aucun compte discord 
         if (discordTagFound == null) {
-            message = `Le compte Quaver du joueur ${username} n'est lié a aucun compte discord.\n` +
-                `*Note: s'il s'agit bien de votre compte, vous pouvez lier votre compte discord dans la section settings du site*\n\n` +
-                `**Suite a la mise a jour de Discord concernant les tag:** Le site de Quaver n'a pas encore changé la nomenclature du tag dans les settings, seul le nom d'utilisateur est pris en compte pour la liaison (le #0000 n'est pas pris en compte pour la liaison avec le bot, mais il doit tout de même être renseigné sur le site afin de pouvoir enregistrer votre username !)`
+            message = `${getLocale(lang, "commandAccountNoDiscordFound", username)}\n*${getLocale(lang, "commandAccountTipsGetId")}*`
             return;
         }
         // Si le profile ne possède pas le meme nom que la personne qui execute la commande
         else if (discordTagFound != discordTagFound) {
-            message = `Le compte Quaver associé au joueur ${username} ne correspond pas à votre compte discord (le compte discord trouvé est **${discordTagFound}**, votre compte discord est **${discordTag}**)\n` +
-                `*Note: S'il s'agit bien de votre compte, pensez à lier votre compte discord dans la section settings du site*\n\n` +
-                `**Suite a la mise a jour de Discord concernant les tag:** Le site de Quaver n'a pas encore changé la nomenclature du tag dans les settings, seul le nom d'utilisateur est pris en compte pour la liaison (le #0000 n'est pas pris en compte pour la liaison avec le bot, mais il doit tout de même être renseigné sur le site afin de pouvoir enregistrer votre username !)`
+            message = `${getLocale(lang, "commandAccountWrongId", username, discordTagFound, discordTag)}\n*${getLocale(lang, "commandAccountTipsGetId")}*`;
             return;
         }
 

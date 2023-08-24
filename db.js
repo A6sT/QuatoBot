@@ -235,7 +235,8 @@ class DB {
             quaverId: quaverId.toString(),
             filter: [],
             latestMapPlayedTimestamp: new Date(),
-            sessionIdleTime: 30 *60,
+            sessionIdleTime: 30 * 60,
+            sessionImageUrl: '',
             globalRank4k: globalRank4k,
             globalRank7k: globalRank7k,
             dailyRank4k: 0,
@@ -297,6 +298,16 @@ class DB {
         let updatedUser = {
             $set: {
                 sessionIdleTime: time
+            }
+        }
+        await this.clientDb.db(this.env).collection("user").updateOne({ discordId: discordId }, updatedUser)
+    }
+
+    // Définir l'image de background sur le graphique de session
+    async setSessionImage(discordId, imageUrl) {
+        let updatedUser = {
+            $set: {
+                sessionImageUrl: imageUrl
             }
         }
         await this.clientDb.db(this.env).collection("user").updateOne({ discordId: discordId }, updatedUser)

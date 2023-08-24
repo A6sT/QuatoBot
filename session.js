@@ -160,6 +160,9 @@ export async function showSession(lang, channel, session, interaction = null, co
         fields.push({ name: getLocale(lang, "embedSessionRankProgress") + " - 7K", value: session.initialRank7k.toString() + " -> " + (session.initialRank7k - session.gainedRank7k).toString(), inline: true });
     }
 
+    // Creation du Graph
+    const sessionGraph = Chart.createSessionGraph(graphModes, graphPr, graphGrades, graphDiff, graphAcc, user.sessionImageUrl);
+
     let dateFormat;
     switch (lang) {
         case "fr":
@@ -177,14 +180,13 @@ export async function showSession(lang, channel, session, interaction = null, co
         .setAuthor({ name: playerInfo.username, iconURL: playerInfo.avatar_url }) // Info sur le joueur
         .setDescription(commentaire)
         .addFields(fields)
+        .setImage(await sessionGraph.getShortUrl())
         .setFooter({ text: `${getLocale(lang, "embedSessionTimeDuration")}: ${convertIntegerToTime(session.sessionTimeDuration)}` })
         .setTimestamp()
 
     if (playerInfo.avatar_url != null) {
         embedAbstract.setThumbnail(`${playerInfo.avatar_url}`);
     }
-    const sessionGraph = Chart.createSessionGraph(graphModes, graphPr, graphGrades, graphDiff, graphAcc); // Cr�ation du graphique
-    embedAbstract.setImage(await sessionGraph.getShortUrl());
 
     // Si la demande de vision de session est issue d'une interaction (/showSession)
     if (interaction != null) {

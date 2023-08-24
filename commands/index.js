@@ -8,6 +8,7 @@ import showsession from './showsession.js';
 import endsession from './endsession.js';
 import setchannel from './setchannel.js';
 import setsessionidletimer from './setsessionidletimer.js';
+import setsessionimage from './setsessionimage.js';
 import filter from "./filter.js";
 import personalchannel from './personalchannel.js';
 import gradelist from './gradelist.js';
@@ -24,6 +25,7 @@ export
         endsession,
         setchannel,
         setsessionidletimer,
+        setsessionimage,
         filter,
         gradelist,
         personalchannel
