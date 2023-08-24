@@ -55,7 +55,7 @@ class Chart {
         return quickgraph;
     }
 
-    createSessionGraph(modes, performances, grades, difficulties, accuracies) {
+    createSessionGraph(modes, performances, grades, difficulties, accuracies, imageUrl) {
         /*console.log("===== DEBUG =====");
         console.log(modes);
         console.log("Total scores: "+performances.length);
@@ -67,82 +67,89 @@ class Chart {
         }
 
         const chart = {
-            "type": "line",
-            "data": {
-                "labels": labels,
-                "datasets": [
+            type: "line",
+            data: {
+                labels: labels,
+                datasets: [
                     {
-                        "label": "Performance (PR)",
-                        "yAxisID": "Y1",
-                        "type": "scatter",
-                        "fill": false,
-                        "pointBorderWidth": 1,
-                        "pointRadius": 5,
-                        "borderColor": this.getModeColor(modes),
-                        "backgroundColor": this.getScoreColor(grades),
-                        "data": performances,
+                        label: "Performance (PR)",
+                        yAxisID: "Y1",
+                        type: "scatter",
+                        fill: false,
+                        pointBorderWidth: 1,
+                        pointRadius: 5,
+                        borderColor: this.getModeColor(modes),
+                        backgroundColor: this.getScoreColor(grades),
+                        data: performances,
                     },
                     {
-                        "label": "Map Difficulty",
-                        "yAxisID": "Y1",
-                        "pointStyle": "line",
-                        "fill": false,
-                        "pointRadius": 0,
-                        "borderColor": "rgba(233,183,54, 1)",
-                        "data": difficulties,
+                        label: "Map Difficulty",
+                        yAxisID: "difficulties",
+                        pointStyle: "line",
+                        fill: false,
+                        pointRadius: 0,
+                        borderColor: "rgba(233,183,54, 1)",
+                        data: difficulties,
                     },
                     {
-                        "label": "Accuracy",
-                        "yAxisID": "Y2",
-                        "pointStyle": "line",
-                        "fill": false,
-                        "pointRadius": 0,
-                        "borderColor": "rgba(211,211,211, 0.5)",
-                        "backgroundColor": "rgba(211,211,211, 0.5)",
-                        "data": accuracies,
+                        label: "Accuracy",
+                        yAxisID: "accuracies",
+                        pointStyle: "line",
+                        fill: false,
+                        pointRadius: 0,
+                        borderColor: "rgba(211,211,211, 0.5)",
+                        backgroundColor: "rgba(211,211,211, 0.5)",
+                        data: accuracies,
                     },
                 ],
             },
-            "options": {
-                "scales": {
-                    "yAxes": [
+            options: {
+                scales: {
+                    xAxes: [{
+                        ticks: {
+                            fontFamily: "sans-serif",
+                            fontColor: "#fff",
+                        }
+                    }],
+                    yAxes: [
                         {
-                            "id": "Y2",
-                            "position": "right",
-                            "ticks": {
-                                "beginAtZero": false,
-                                "fontFamily": "sans-serif",
-                                "fontColor": "#fff",
-                                "callback": (val) => {
+                            id: "difficulties",
+                            ticks: {
+                                fontFamily: "sans-serif",
+                                fontColor: "#fff",
+                            },
+                        },
+                        {
+                            id: "accuracies",
+                            position: "right",
+                            ticks: {
+                                fontFamily: "sans-serif",
+                                fontColor: "#fff",
+                                callback: (val) => {
                                     return val.toLocaleString()+"%";
                                 },
                             },
-                        },
-                        {
-                            "id": "Y1",
-                            "ticks": {
-                                "beginAtZero": false,
-                                "fontFamily": "sans-serif",
-                                "fontColor": "#fff",
-                            },
-                        },
-                    ]
+                        }
+                    ],
                 },
-                "legend": {
-                    "labels": {
-                        "usePointStyle": true,
-                        "boxWidth": 8,
-                        "fontColor": "#fff",
-                        "fontFamily": "sans-serif",
-                        "fontSize": 15,
+                legend: {
+                    labels: {
+                        usePointStyle: true,
+                        boxWidth: 8,
+                        fontColor: "#fff",
+                        fontFamily: "sans-serif",
+                        fontSize: 15,
                     }
+                },
+                plugins: {
+                    backgroundImageUrl: imageUrl
                 }
             }
         }
 
         const quickgraph = new QuickChart()
         quickgraph.setConfig(chart)
-            .setBackgroundColor('transparent')
+            .setBackgroundColor('#2b2d31')
             .setWidth(500)
             .setHeight(300);
 
