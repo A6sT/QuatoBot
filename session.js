@@ -161,7 +161,11 @@ export async function showSession(lang, channel, session, interaction = null, co
     }
 
     // Creation du Graph
-    const sessionGraph = Chart.createSessionGraph(graphModes, graphPr, graphGrades, graphDiff, graphAcc, user.sessionImageUrl);
+    const prefs = {}
+    prefs.imageUrl = user.sessionImageUrl;
+    prefs.difficultyLineColor = user.sessionDifficultyLineColor;
+    prefs.accuracyLineColor = user.sessionAccuracyLineColor;
+    const sessionGraph = Chart.createSessionGraph(graphModes, graphPr, graphGrades, graphDiff, graphAcc, prefs);
 
     let dateFormat;
     switch (lang) {

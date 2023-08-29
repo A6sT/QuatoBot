@@ -104,6 +104,65 @@ client.on('interactionCreate', async interaction => {
             interaction.editReply({ embeds: [playerProfile[0]], components: [playerProfile[1]] })
         }
     }
+    if (interaction.isModalSubmit()) {
+        if (interaction.customId === 'edit-session') {
+            await interaction.deferReply({ ephemeral: true });
+
+            const server = await DB.getServer(interaction.guildId);
+            const lang = server.language;
+            const discordId = interaction.member.id;
+
+            let fieldToUpdate = {}
+            let idleTime = interaction.fields.getTextInputValue('idle-time');
+            let imageUrl = interaction.fields.getTextInputValue('image-url');
+            let difficultyLineColor = interaction.fields.getTextInputValue('difficulty-color');
+            let accuracyLineColor = interaction.fields.getTextInputValue('accuracy-color');
+
+            // Vérifier que le temps renseigné est valide
+            if (idleTime != '' && (parseInt(idleTime) < 30 || parseInt(idleTime) > 180)) {
+                return interaction.editReply({ content: getLocale(lang, "commandEditSessionIdleTimeOutOfRange") });
+            }
+            fieldToUpdate.sessionIdleTime = idleTime == '' ? 1800 : parseInt(idleTime) * 60;
+
+            // Vérifier si l'image renseignée est valide
+            if (imageUrl != '' && !/\.(jpg|jpeg|png|webp|svg)$/.test(imageUrl)) {
+                return interaction.editReply({ content: getLocale(lang, "commandEditSessionNotAnImage") });
+            }
+            fieldToUpdate.sessionImageUrl = imageUrl;
+
+            // Vérifier si la couleur renseignée est valide
+            if (difficultyLineColor != '' && !/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(difficultyLineColor)) {
+                return interaction.editReply({ content: getLocale(lang, "commandEditSessionNotAColor") });
+            }
+            fieldToUpdate.sessionDifficultyLineColor = difficultyLineColor;
+
+            if (accuracyLineColor != '' && !/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(accuracyLineColor)) {
+                return interaction.editReply({ content: getLocale(lang, "commandEditSessionNotAColor") });
+            }
+            fieldToUpdate.sessionAccuracyLineColor = accuracyLineColor;
+
+            // Sauvegarde des nouvelles infos
+            await DB.setSessionInfo(discordId, fieldToUpdate);
+
+            // Creation du Graph
+            const user = await DB.getUser(discordId);
+
+            const graphModes = [1, 1, 1, 2, 2, 2, 1, 2, 1, 2];
+            const graphPr = [35.35, 27.3, 35.3, 23, 20.6, 26.7, 26.8, 28.9, 30.7, 33.8];
+            const graphGrades = ['S', 'A', 'SS', 'A', 'B', 'S', 'SS', 'SS', 'SS', 'S'];
+            const graphDiff = [34.9, 33.75, 32.3, 30.6, 37.3, 31.5, 25, 26.1, 28.7, 33.5];
+            const graphAcc = [98.3, 94.6, 99.4, 93.4, 88.8, 95.3, 99.1, 99.7, 99.1, 98.2];
+            const prefs = {}
+            prefs.imageUrl = user.sessionImageUrl == '' ? null : user.sessionImageUrl;
+            prefs.difficultyLineColor = user.sessionDifficultyLineColor == '' ? null : user.sessionDifficultyLineColor;
+            prefs.accuracyLineColor = user.sessionAccuracyLineColor == '' ? null : user.sessionAccuracyLineColor;
+
+            const sessionGraph = Chart.createSessionGraph(graphModes, graphPr, graphGrades, graphDiff, graphAcc, prefs);
+            const graphUrl = await sessionGraph.getShortUrl();
+            await interaction.editReply({ content: getLocale(lang, "commandEditSessionUpdated") });
+            return await interaction.followUp({ content: graphUrl, ephemeral: true });
+        }
+    }
 });
 
 // ============================== Autres =================================

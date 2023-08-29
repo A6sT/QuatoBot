@@ -15,7 +15,7 @@ class Chart {
             rankValues.push(graph[i].rank);
         }
 
-        // Création du graphique
+        // Crï¿½ation du graphique
         const chart = {
             type: 'line',
             data: {
@@ -55,7 +55,7 @@ class Chart {
         return quickgraph;
     }
 
-    createSessionGraph(modes, performances, grades, difficulties, accuracies, imageUrl) {
+    createSessionGraph(modes, performances, grades, difficulties, accuracies, prefs) {
         /*console.log("===== DEBUG =====");
         console.log(modes);
         console.log("Total scores: "+performances.length);
@@ -84,21 +84,21 @@ class Chart {
                     },
                     {
                         label: "Map Difficulty",
-                        yAxisID: "difficulties",
+                        yAxisID: "Y1",
                         pointStyle: "line",
                         fill: false,
                         pointRadius: 0,
-                        borderColor: "rgba(233,183,54, 1)",
+                        borderColor: prefs.difficultyLineColor == null ? "#e9b736" : prefs.difficultyLineColor,
                         data: difficulties,
                     },
                     {
                         label: "Accuracy",
-                        yAxisID: "accuracies",
+                        yAxisID: "Y2",
                         pointStyle: "line",
                         fill: false,
                         pointRadius: 0,
-                        borderColor: "rgba(211,211,211, 0.5)",
-                        backgroundColor: "rgba(211,211,211, 0.5)",
+                        borderColor: (prefs.accuracyLineColor == null ? "#d3d3d3" : prefs.accuracyLineColor)+"50",
+                        backgroundColor: (prefs.accuracyLineColor == null ? "#d3d3d3" : prefs.accuracyLineColor)+"50",
                         data: accuracies,
                     },
                 ],
@@ -113,20 +113,20 @@ class Chart {
                     }],
                     yAxes: [
                         {
-                            id: "difficulties",
+                            id: "Y1",
                             ticks: {
                                 fontFamily: "sans-serif",
                                 fontColor: "#fff",
                             },
                         },
                         {
-                            id: "accuracies",
+                            id: "Y2",
                             position: "right",
                             ticks: {
                                 fontFamily: "sans-serif",
                                 fontColor: "#fff",
                                 callback: (val) => {
-                                    return val.toLocaleString()+"%";
+                                    return val.toLocaleString() + "%";
                                 },
                             },
                         }
@@ -142,7 +142,7 @@ class Chart {
                     }
                 },
                 plugins: {
-                    backgroundImageUrl: imageUrl
+                    backgroundImageUrl: prefs.imageUrl
                 }
             }
         }

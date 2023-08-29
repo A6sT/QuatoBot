@@ -237,6 +237,8 @@ class DB {
             latestMapPlayedTimestamp: new Date(),
             sessionIdleTime: 30 * 60,
             sessionImageUrl: '',
+            sessionDifficultyLineColor: '',
+            sessionAccuracyLineColor: '',
             globalRank4k: globalRank4k,
             globalRank7k: globalRank7k,
             dailyRank4k: 0,
@@ -292,23 +294,10 @@ class DB {
         await this.clientDb.db(this.env).collection("user").updateOne({ discordId: discordId }, updatedUser)
     }
 
-    // Définir le temps avant la fin d'une session pour un utilisateur
-    // time: minutes convertit en secondes
-    async setSessionIdleTime(discordId, time) {
+    // Définir les préferences d'affichage sur le graphique de session
+    async setSessionInfo(discordId, info) {
         let updatedUser = {
-            $set: {
-                sessionIdleTime: time
-            }
-        }
-        await this.clientDb.db(this.env).collection("user").updateOne({ discordId: discordId }, updatedUser)
-    }
-
-    // Définir l'image de background sur le graphique de session
-    async setSessionImage(discordId, imageUrl) {
-        let updatedUser = {
-            $set: {
-                sessionImageUrl: imageUrl
-            }
+            $set: info
         }
         await this.clientDb.db(this.env).collection("user").updateOne({ discordId: discordId }, updatedUser)
     }
