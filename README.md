@@ -23,3 +23,6 @@ You can also provide a channel where the sessions of linked players will be disp
 *A session will be displayed only if the user have at least played 5 maps. By default, the sessions will be displayed after 30 minutes of inactivity, but this can be configured using the command ``/edit-session``*
 
 Users can also decide to set their own channel where they can display their score / sessions. This can be done using the ``/personal-channel set [player] [channel]`` and can be removed with the ``/personnal-channel unset`` command. Note that the player must be linked to the bot for him to be able to make a personnal channel.
+
+### Why are some of my scores not registered ?
+The scores made on unranked / unsubmitted map or with specific mods cannot be tracked by the bot if you're not donator on Quaver.
