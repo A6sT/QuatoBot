@@ -2,7 +2,7 @@
 import { convertIntegerToString } from '../index.js';
 import { EmbedBuilder, ButtonStyle, AttachmentBuilder } from 'discord.js';
 import DB from '../db.js';
-import { Pagination } from 'pagination.djs';
+import { Pagination, getLocale } from 'pagination.djs';
 import axios from 'axios';
 
 
