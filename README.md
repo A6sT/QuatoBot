@@ -26,3 +26,6 @@ Users can also decide to set their own channel where they can display their scor
 
 ### Why are some of my scores not registered ?
 The scores made on unranked / unsubmitted map or with specific mods cannot be tracked by the bot if you're not donator on Quaver.
+
+### How can I set a background image for my session's graph result ?
+Using the ``/edit-session`` command, you will be able to edit few settings regarding your sessions. One of them is about the background image used for the session's graph. The ideal dimensions for the picture used are 500x300 (automaticaly scaled). You can find a template for the background image in the resource folder !
