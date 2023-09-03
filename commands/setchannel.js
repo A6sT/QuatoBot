@@ -13,8 +13,7 @@ export default {
                 .setRequired(true)
                 .addChoices(
                     { name: 'Sessions', value: 'session' },
-                    { name: 'Score-tracking', value: 'tracker' },
-                    { name: 'Salles multijoueur', value: 'multiplayer' },
+                    { name: 'Score-tracking', value: 'tracker' }
                 )
         )
         .addChannelOption(option => option.setName('channel').setDescription("The channel you want to send the infos to").setRequired(true)),

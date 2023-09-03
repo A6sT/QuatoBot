@@ -67,7 +67,6 @@ client.once('ready', function () {
     setInterval(resetDailyCounter, 60 * 1000);
     console.log("started");
 });
-
 // ============================== Listeners ==============================
 
 client.on('interactionCreate', async interaction => {

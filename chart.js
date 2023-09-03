@@ -126,7 +126,11 @@ class Chart {
                                 fontFamily: "sans-serif",
                                 fontColor: "#fff",
                                 callback: (val) => {
-                                    return val.toLocaleString() + "%";
+                                    let accVal = `${val.toLocaleString()}%`;
+                                    while (accVal.length < 4) {
+                                        accVal = ` ${accVal}`;
+                                    }
+                                    return accVal;
                                 },
                             },
                         }

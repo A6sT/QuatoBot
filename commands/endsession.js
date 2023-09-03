@@ -36,8 +36,8 @@ export default {
             return interaction.editReply({ content: getLocale(lang, "commandEndSessionNoActiveSession")});
         }
 
-        // On affiche uniquement le résumé pour les sessions ayant plus de 1 score
-        if (session.scores.length <= 1) {
+        // On affiche uniquement le résumé pour les sessions ayant plus de 6 score
+        if (session.scores.length <= 5) {
             return interaction.editReply({ content: getLocale(lang, "commandEndSessionNotEnoughMapsPlayed")});
         }
 
@@ -65,5 +65,4 @@ export default {
 
         return interaction.editReply({ content: getLocale(lang, "commandEndSessionSessionEnded", `<#${server.sessionChannel}>`) });
     }
-
 }
