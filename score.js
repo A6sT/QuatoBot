@@ -275,7 +275,10 @@ async function showLatestScore(server, channel, newScore) {
     const color = getGradeColor(score.grade);
 
     // Création du message
-
+    let titleMapInfo = `${map.artist} - ${map.title} - [${map.difficulty_name}]`;
+    if(titleMapInfo.length > 230){
+        titleMapInfo = `${titleMapInfo.substring(0, 230)}...`;
+    }
     // Création des différents fields du message
     const fields = [
         { name: 'Performance Rating', value: pr, inline: true }, // PR
@@ -312,7 +315,7 @@ async function showLatestScore(server, channel, newScore) {
 
     const embedScore = new EmbedBuilder()
         .setColor(color) // Couleur en rapport avec la note
-        .setTitle(`[${mode}K] ${map.artist} - ${map.title} - [${map.difficulty_name}]${difficulty_rating}`) // Nom de la map et difficulté
+        .setTitle(`[${mode}K] ${titleMapInfo}${difficulty_rating}`) // Nom de la map et difficulté
         .setURL(`https://quavergame.com/mapset/map/${map.id}`) // Lien vers le site de la map (si dispo)
         .setAuthor({ name: playerInfo.username, iconURL: playerInfo.avatar_url, url: `https://quavergame.com/user/${playerInfo.id}` }) // Info sur le joueur
         .setDescription(`${getLocale(lang, "embedScoreCreatedBy", map.creator_username)}\n\n${description}`)
