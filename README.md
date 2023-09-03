@@ -25,7 +25,10 @@ You can also provide a channel where the sessions of linked players will be disp
 Users can also decide to set their own channel where they can display their score / sessions. This can be done using the ``/personal-channel set [player] [channel]`` and can be removed with the ``/personnal-channel unset`` command. Note that the player must be linked to the bot for him to be able to make a personnal channel.
 
 ### Why are some of my scores not registered ?
-The scores made on unranked / unsubmitted map or with specific mods cannot be tracked by the bot if you're not donator on Quaver.
+The scores made on unranked / unsubmitted map or with specific mods cannot be tracked by the bot if you're not donator on Quaver
 
 ### How can I set a background image for my session's graph result ?
 Using the ``/edit-session`` command, you will be able to edit few settings regarding your sessions. One of them is about the background image used for the session's graph. The ideal dimensions for the picture used are 500x300 (automaticaly scaled). You can find a template for the background image in the resource folder !
+
+### How can i request new features for the bot ?
+Simply open an issue describing what you want to add, and if this is doable and I like the idea, I will start working on it on my free time
