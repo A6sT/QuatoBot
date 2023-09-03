@@ -31,8 +31,8 @@ export default {
 
             await interaction.deferReply({ ephemeral: true });
 
-            // Check si le channel existe
-            if (channel.type != "GUILD_TEXT") {
+            // Check si le channel existe et est textuel
+            if (channel.type != 0) {
                 return interaction.editReply({ content: getLocale(lang, "commandChannelIsNotTextual", channel.toString()) });
             }
 
