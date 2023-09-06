@@ -8,7 +8,7 @@ import DB from '../db.js';
 export default {
     data: new SlashCommandBuilder()
         .setName('link-account')
-        .setDescription('Lier son compte Quaver a son compte discord')
+        .setDescription('Link you Discord account to Quaver')
         .addStringOption(option => option.setName('username').setDescription("Your Quaver IGN (Only needed the first time you link yourself to the bot)")),
         /**
          * 

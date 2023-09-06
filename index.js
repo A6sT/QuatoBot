@@ -3,7 +3,7 @@ import { REST } from '@discordjs/rest';
 import { Routes } from 'discord-api-types/v9';
 import { commands } from './commands/index.js';
 import { handleCommand } from './helpers/command.js';
-import { Client, GatewayIntentBits, Collection, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import { Client, GatewayIntentBits, ActivityType, Collection, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
 import { main } from './score.js';
 import { manageSessions } from './session.js';
 import axios from 'axios';
@@ -57,7 +57,9 @@ client.on('guildMemberRemove', (member) => {
 
 // Fonction de lancement du bot
 client.once('ready', function () {
-    client.user.setActivity('Quaver', { type: 'PLAYING' });
+    client.user.setPresence({
+        activities: [{ name: `Quaver`, type: ActivityType.Playing }]
+    });
      
     // Récuperer toutes les commandes crées
     registerCommands();

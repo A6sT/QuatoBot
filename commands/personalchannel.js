@@ -51,7 +51,7 @@ export default {
                     channel = interaction.options.getChannel('channel');
 
                     // Vérifie que le channel est textuel
-                    if (channel.type != "GUILD_TEXT") {
+                    if (channel.type != 0) {
                         return interaction.editReply({ content: getLocale(lang, "commandChannelIsNotTextual", channel.toString())});
                     }
 
