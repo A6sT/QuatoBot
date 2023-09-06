@@ -8,7 +8,7 @@ import { buildPlayerProfile, getLocale } from '../index.js';
 export default {
     data: new SlashCommandBuilder()
         .setName('search-player')
-        .setDescription('Rechercher un joueur')
+        .setDescription('Look for players global statistics')
         .addStringOption(option => option.setName('username').setDescription("The player you want to look at").setRequired(true)),
         /**
          * 

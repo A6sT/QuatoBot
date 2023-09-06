@@ -394,6 +394,12 @@ class DB {
         sessions.forEach(async (session) => {
             let user = await this.getUser(session.discordId);
             let isMaxDurationReached = false;
+            
+            // If the user left the server before ending his session, destroy the session
+            if(user == null){
+                this.destroySession(session.discordId);
+                return;
+            }
 
             // Si la session arrive a terme, on ne l'update plus
             if (session.idleTime >= user.sessionIdleTime) {

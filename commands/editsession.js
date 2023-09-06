@@ -6,7 +6,7 @@ import DB from '../db.js';
 export default {
     data: new SlashCommandBuilder()
         .setName('edit-session')
-        .setDescription("Set the image of the background for the session graph"),
+        .setDescription("Edit your session parameters"),
         /**
          * 
          * @param {CommandInteraction} interaction 

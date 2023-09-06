@@ -6,7 +6,7 @@ import DB from '../db.js';
 export default {
     data: new SlashCommandBuilder()
         .setName('info')
-        .setDescription("Check your infos"),
+        .setDescription("Check your infos related to the bot"),
         /**
          * 
          * @param {CommandInteraction} interaction 
