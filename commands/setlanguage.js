@@ -25,10 +25,10 @@ export default {
 
             const selectedLanguage = interaction.options.getString("language");
 
-            interaction.deferReply({ ephemeral: true });
+            await interaction.deferReply({ ephemeral: true });
             // Sauvegarde de la nouvelle langue
             await DB.setLanguage(interaction.guildId, selectedLanguage);
             
-            return interaction.editReply({ content: getLocale(lang, "commandSetLanguageLangDefined"), ephemeral: true });
+            return interaction.editReply({ content: getLocale(selectedLanguage, "commandSetLanguageLangDefined"), ephemeral: true });
         }
 }
