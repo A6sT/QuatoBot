@@ -34,6 +34,16 @@ export default {
                 .setValue(user.sessionIdleTime == null ? '' : (user.sessionIdleTime/60).toString())
                 .setRequired(false);
 
+            const timezoneInput = new TextInputBuilder()
+                .setCustomId('timezone')
+                .setMaxLength(3)
+                .setLabel("Set your current timezone (UTC+x)")
+                .setPlaceholder("Offset must be between -12 and 14. Ex: New York is -5")
+                .setStyle(TextInputStyle.Short)
+                .setValue(user.timezoneOffset == 0 || user.timezoneOffset == null ? '' : user.timezoneOffset.toString())
+                .setRequired(false);
+
+
             const imageUrlInput = new TextInputBuilder()
                 .setCustomId('image-url')
                 .setLabel("Set image of background for graph")
@@ -59,10 +69,11 @@ export default {
                 .setRequired(false);
 
             const row1 = new ActionRowBuilder().addComponents(idleTimeInput);
-            const row2 = new ActionRowBuilder().addComponents(imageUrlInput);
-            const row3 = new ActionRowBuilder().addComponents(difficultyLineColorInput);
-            const row4 = new ActionRowBuilder().addComponents(accuracyLineColorInput);
-            modal.addComponents(row1, row2, row3, row4);
+            const row2 = new ActionRowBuilder().addComponents(timezoneInput);
+            const row3 = new ActionRowBuilder().addComponents(imageUrlInput);
+            const row4 = new ActionRowBuilder().addComponents(difficultyLineColorInput);
+            const row5 = new ActionRowBuilder().addComponents(accuracyLineColorInput);
+            modal.addComponents(row1, row2, row3, row4, row5);
 
             return await interaction.showModal(modal);
         }

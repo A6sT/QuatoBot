@@ -65,8 +65,7 @@ client.once('ready', function () {
     registerCommands();
 
     setInterval(main, 30 * 1000);
-    setInterval(manageSessions, parseInt(process.env.REFRESH_SESSION_RATE, 10) * 1000);
-    setInterval(resetDailyCounter, 60 * 1000);
+    setInterval(manageSessions, parseInt(process.env.REFRESH_SESSION_RATE) * 1000);
     console.log("started");
 });
 // ============================== Listeners ==============================
@@ -115,6 +114,7 @@ client.on('interactionCreate', async interaction => {
 
             let fieldToUpdate = {}
             let idleTime = interaction.fields.getTextInputValue('idle-time');
+            let timezone = interaction.fields.getTextInputValue('timezone');
             let imageUrl = interaction.fields.getTextInputValue('image-url');
             let difficultyLineColor = interaction.fields.getTextInputValue('difficulty-color');
             let accuracyLineColor = interaction.fields.getTextInputValue('accuracy-color');
@@ -124,6 +124,12 @@ client.on('interactionCreate', async interaction => {
                 return interaction.editReply({ content: getLocale(lang, "commandEditSessionIdleTimeOutOfRange") });
             }
             fieldToUpdate.sessionIdleTime = idleTime == '' ? 1800 : parseInt(idleTime) * 60;
+
+            // Vérifier que la timezone renseignée est valide
+            if (timezone != '' && (parseInt(timezone) < -12 || parseInt(timezone) > 14)) {
+                return interaction.editReply({ content: getLocale(lang, "commandEditSessionTimezoneOutOfRange", timezone) });
+            }
+            fieldToUpdate.timezoneOffset = timezone == '' ? 0 : parseInt(timezone);
 
             // Vérifier si l'image renseignée est valide
             if (imageUrl != '' && !/\.(jpg|jpeg|png|webp|svg)$/.test(imageUrl)) {
@@ -201,13 +207,11 @@ function registerCommands(newGuildId = null) {
 
 // Effectuer une action sur tout les serveur et notifier
 async function globalMessageAction(message) {
-    // Action
-    //await DB.resetDailyCounter();
 
     // Global server warning
     const embedWarning = new EmbedBuilder()
         .setColor("#EC9006")
-        .setTitle(`Annonce de mise à jour`)
+        .setTitle(`Announcement regarding past days bugs`)
         .setDescription(message)
         .setTimestamp()
 
@@ -221,14 +225,6 @@ async function globalMessageAction(message) {
         }
     }
 
-}
-
-// Reset les trackeur de rank journalier
-async function resetDailyCounter() {
-    const date = new Date();
-    if (date.getUTCHours() == 22 && date.getUTCMinutes() == 0) {
-        DB.resetDailyCounter();
-    }
 }
 
 // Convert difficulty writing to stdr difficulty printing in Quaver

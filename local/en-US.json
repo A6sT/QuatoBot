@@ -40,6 +40,7 @@
 	"commandEditSessionIdleTimeOutOfRange": "The given time must be between 30 minutes and 3 hours",
 	"commandEditSessionNotAnImage": "The image provided is not valid (the image url format must be either jpg, jpeg, pnj, webp or svg)",
 	"commandEditSessionNotAColor": "The color provided is not valid",
+	"commandEditSessionTimezoneOutOfRange": "The given timezone must be between UTC-12 and UTC+14 (%VAR% is not valid)",
 	"commandEditSessionUpdated": "Your session settings have been updated !",
 	"commandSetLanguageLangDefined": "The new language has been set",
 	"commandSetChannelChannelDefined": "The channel %VAR% has been defined as a %VAR% channel",

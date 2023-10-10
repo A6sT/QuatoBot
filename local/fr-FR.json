@@ -40,6 +40,7 @@
 	"commandEditSessionIdleTimeOutOfRange": "Le temps renseigné doit être compris entre 30 minutes et 3 heures",
 	"commandEditSessionNotAnImage": "L'image renseignée n'est pas valide (le lien doit contenir une image au format jpg, jpeg, pnj, webp ou svg)",
 	"commandEditSessionNotAColor": "La couleur renseignée n'est pas valide",
+	"commandEditSessionTimezoneOutOfRange": "Le fuseau horraire renseigné doit être entre compris entre UTC-12 et UTC+14 (%VAR% n'est pas valide)",
 	"commandEditSessionUpdated": "Vos paramètres de session ont été mis à jour !",
 	"commandSetLanguageLangDefined": "La nouvelle langue a été définie",
 	"commandSetChannelChannelDefined": "Le channel %VAR% a été définit comme channel de %VAR%",
