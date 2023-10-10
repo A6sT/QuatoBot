@@ -2,7 +2,7 @@
 import axios from 'axios';
 import { EmbedBuilder } from 'discord.js';
 import { getLocale, getGradeColor, isScoreFiltered, convertIntegerToString, client } from './index.js';
-import WebSocket from 'ws';
+/*import WebSocket from 'ws';
 
 const ws = new WebSocket('ws://www.host.com/path');
 
@@ -62,8 +62,14 @@ export async function main() {
         users.push(user);
     })
 
+    const date = new Date();
     users.forEach(async function (user) {
         seekNewScores(user);
+
+        // Reset les trackeur de rank journalier
+        if (date.getUTCHours() + user.timezoneOffset == 0 && date.getUTCMinutes() == 0) {
+            DB.resetDailyCounter(user.discordId);
+        }
     })
 }
 
@@ -247,7 +253,9 @@ async function showLatestScore(server, channel, newScore) {
             rankupMessage = `🟢 ${(globalRank - newGlobalRank)} ${getLocale(lang, "embedScoreRankGained")}: ${globalRank} -> ${newGlobalRank}`;
         }
     }
-    rankupMessage += newDailyRank != 0 ? ` (${newDailyRank > 0 ? "+" : ""}${newDailyRank} ${getLocale(lang, "embedScoreToday")})` : "";
+    if (newDailyRank != 0) {
+        rankupMessage += ` (${newDailyRank > 0 ? "+" : ""}${newDailyRank} ${getLocale(lang, "embedScoreToday")})`;
+    }
 
     // Verifier si la map est fail
     let description;
@@ -255,7 +263,7 @@ async function showLatestScore(server, channel, newScore) {
         difficulty_rating = '';
         description = getLocale(lang, "embedScoreMapFailed", `<@${user.discordId}>`);
     } else {
-        difficulty_rating = ` (${convertIntegerToString(difficulty_rating.toString())})`
+        difficulty_rating = ` (${convertIntegerToString(difficulty_rating.toString())})`;
         description = getLocale(lang, "embedScoreMapFinished", `<@${user.discordId}>`);
     }
 
@@ -270,9 +278,6 @@ async function showLatestScore(server, channel, newScore) {
         bpm *= speedModifier;
         bpm = Math.round(bpm * 100) / 100;
     }
-
-    // Couleur du message
-    const color = getGradeColor(score.grade);
 
     // Création du message
     let titleMapInfo = `${map.artist} - ${map.title} - [${map.difficulty_name}]`;
@@ -313,6 +318,8 @@ async function showLatestScore(server, channel, newScore) {
         fields.push({ name: '\u200b', value: `**${getLocale(lang, "embedScoreMapNotRanked")}**`, inline: false });
     }
 
+    const color = getGradeColor(score.grade);
+
     const embedScore = new EmbedBuilder()
         .setColor(color) // Couleur en rapport avec la note
         .setTitle(`[${mode}K] ${titleMapInfo}${difficulty_rating}`) // Nom de la map et difficulté
@@ -336,7 +343,11 @@ async function showLatestScore(server, channel, newScore) {
     try {
         // FC
         if (score.count_miss == 0) {
-            await m.react('<:fc:977246030263353355>');
+            if (score.count_great == 0) {
+                await m.react('<:pfc:977246030263353355>');
+            } else {
+                await m.react('<:gfc:1151811405754933270>');
+            }
         }
         // PB
         if (score.personal_best == true) {

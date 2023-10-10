@@ -236,6 +236,7 @@ class DB {
             filter: [],
             latestMapPlayedTimestamp: new Date(),
             sessionIdleTime: 30 * 60,
+            timezoneOffset: 0,
             sessionImageUrl: '',
             sessionDifficultyLineColor: '',
             sessionAccuracyLineColor: '',
@@ -312,15 +313,15 @@ class DB {
         await this.clientDb.db(this.env).collection("user").updateOne({ discordId: discordId }, updatedUser)
     }
 
-    // Mise à jour du dailyRankCounter pour tout les utilisateurs
-    resetDailyCounter() {
+    // Mise à jour du dailyRankCounter pour un utilisateur
+    resetDailyCounter(discordId) {
         let updatedUser = {
             $set: {
                 dailyRank4k: 0,
                 dailyRank7k: 0
             }
         }
-        this.clientDb.db(this.env).collection("user").updateMany({}, updatedUser)
+        this.clientDb.db(this.env).collection("user").updateOne({ discordId: discordId }, updatedUser)
     }
 
     // Supprimer un utilisateur d'un serveur

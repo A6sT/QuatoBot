@@ -165,7 +165,7 @@ export async function showSession(lang, channel, session, interaction = null, co
     prefs.imageUrl = user.sessionImageUrl;
     prefs.difficultyLineColor = user.sessionDifficultyLineColor;
     prefs.accuracyLineColor = user.sessionAccuracyLineColor;
-    const sessionGraph = Chart.createSessionGraph(graphModes, graphPr, graphGrades, graphDiff, graphAcc, prefs);
+    const sessionGraph = await Chart.createSessionGraph(graphModes, graphPr, graphGrades, graphDiff, graphAcc, prefs).getShortUrl();
 
     let dateFormat;
     switch (lang) {
@@ -184,7 +184,7 @@ export async function showSession(lang, channel, session, interaction = null, co
         .setAuthor({ name: playerInfo.username, iconURL: playerInfo.avatar_url }) // Info sur le joueur
         .setDescription(commentaire)
         .addFields(fields)
-        .setImage(await sessionGraph.getShortUrl())
+        .setImage(sessionGraph)
         .setFooter({ text: `${getLocale(lang, "embedSessionTimeDuration")}: ${convertIntegerToTime(session.sessionTimeDuration)}` })
         .setTimestamp()
 
