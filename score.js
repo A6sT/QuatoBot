@@ -88,16 +88,23 @@ async function seekNewScores(user) {
             let server = servers[i];
             let personalChannel = await DB.getPersonalChannel(server.serverId, user.discordId);
 
-            // Envoie du message uniquement si un channel global est définit
+            const serverCache = client.guilds.cache.get(server.serverId);
             if (server.scoreChannel != "") {
-                const globalChannel = client.guilds.cache.get(server.serverId).channels.cache.get(server.scoreChannel);
-                showLatestScore(server, globalChannel, scoreRegistered);
+
+                // Envoie du message uniquement si un channel global est définit
+                const globalChannel = serverCache.channels.cache.get(server.scoreChannel);
+                if (globalChannel.permissionsFor(serverCache.members.me).toArray().includes("SendMessages")) {
+                    await showLatestScore(server, globalChannel, scoreRegistered);
+                }
             }
 
-            // Envoie du message dans le channel perso
             if (personalChannel != null) {
-                const channelPerso = client.guilds.cache.get(server.serverId).channels.cache.get(personalChannel.channel);
-                showLatestScore(server, channelPerso, scoreRegistered);
+
+                // Envoie du message dans le channel perso
+                const channelPerso = serverCache.channels.cache.get(personalChannel.channel);
+                if (channelPerso.permissionsFor(serverCache.members.me).toArray().includes("SendMessages")) {
+                    await showLatestScore(server, channelPerso, scoreRegistered);
+                }
             }
         }
     }

@@ -48,17 +48,23 @@ export default {
         for (let i = 0; i < servers.length; i++) {
             let currentServer = servers[i];
             let personalChannel = await DB.getPersonalChannel(currentServer.serverId, user.discordId);
+
+            const serverCache = interaction.client.guilds.cache.get(currentServer.serverId);
             if (currentServer.sessionChannel != "") {
 
                 // Envoie du message dans le channel global
-                const globalChannel = interaction.client.guilds.cache.get(currentServer.serverId).channels.cache.get(currentServer.sessionChannel);
-                await showSession(currentServer.language, globalChannel, session, null, commentaire);
+                const globalChannel = serverCache.channels.cache.get(currentServer.sessionChannel);
+                if (globalChannel.permissionsFor(serverCache.members.me).toArray().includes("SendMessages")) {
+                    await showSession(currentServer.language, globalChannel, session, null, commentaire);
+                }
             }
             if (personalChannel != null) {
 
                 // Envoie du message dans le channel perso
-                const channelPerso = interaction.client.guilds.cache.get(currentServer.serverId).channels.cache.get(personalChannel.channel);
-                await showSession(currentServer.language, channelPerso, session, null, commentaire);
+                const channelPerso = serverCache.channels.cache.get(personalChannel.channel);
+                if (channelPerso.permissionsFor(serverCache.members.me).toArray().includes("SendMessages")) {
+                    await showSession(currentServer.language, channelPerso, session, null, commentaire);
+                }
             }
         }
         DB.destroySession(session.discordId);
