@@ -63,7 +63,7 @@ client.once('ready', function () {
      
     // Récuperer toutes les commandes crées
     registerCommands();
-
+    
     setInterval(main, 30 * 1000);
     setInterval(manageSessions, parseInt(process.env.REFRESH_SESSION_RATE) * 1000);
     console.log("started");
@@ -206,12 +206,12 @@ function registerCommands(newGuildId = null) {
 }
 
 // Effectuer une action sur tout les serveur et notifier
-async function globalMessageAction(message) {
+async function globalMessageAction(title, message) {
 
     // Global server warning
     const embedWarning = new EmbedBuilder()
         .setColor("#EC9006")
-        .setTitle(`Announcement regarding past days bugs`)
+        .setTitle(title)
         .setDescription(message)
         .setTimestamp()
 
@@ -220,8 +220,11 @@ async function globalMessageAction(message) {
         if (servers[i].scoreChannel != "") {
 
             // Envoie du message
-            const channel = client.guilds.cache.get(servers[i].serverId).channels.cache.get(servers[i].scoreChannel);
-            channel.send({ embeds: [embedWarning] });
+            const server = client.guilds.cache.get(servers[i].serverId);
+            const channel = server.channels.cache.get(servers[i].scoreChannel);
+            if (channel.permissionsFor(server.members.me).toArray().includes("SendMessages")) {
+                channel.send({ embeds: [embedWarning] });
+            }
         }
     }
 

@@ -22,17 +22,23 @@ export async function manageSessions() {
             for (let i = 0; i < servers.length; i++) {
                 let server = servers[i];
                 let personalChannel = await DB.getPersonalChannel(server.serverId, user.discordId);
+
+                const serverCache = client.guilds.cache.get(server.serverId);
                 if (server.sessionChannel != "") {
 
                     // Envoie du message dans le channel global
-                    const globalChannel = client.guilds.cache.get(server.serverId).channels.cache.get(server.sessionChannel);
-                    await showSession(server.language, globalChannel, session);
+                    const globalChannel = serverCache.channels.cache.get(server.sessionChannel);
+                    if (globalChannel.permissionsFor(serverCache.members.me).toArray().includes("SendMessages")) {
+                        await showSession(server.language, globalChannel, session);
+                    }
                 }
                 if (personalChannel != null) {
 
                     // Envoie du message dans le channel perso
-                    const channelPerso = client.guilds.cache.get(server.serverId).channels.cache.get(personalChannel.channel);
-                    await showSession(server.language, channelPerso, session);
+                    const channelPerso = serverCache.channels.cache.get(personalChannel.channel);
+                    if (channelPerso.permissionsFor(serverCache.members.me).toArray().includes("SendMessages")) {
+                        await showSession(server.language, channelPerso, session);
+                    }
                 }
 
             }
