@@ -67,7 +67,7 @@ export async function main() {
         seekNewScores(user);
 
         // Reset les trackeur de rank journalier
-        if (date.getUTCHours() + user.timezoneOffset == 0 && date.getUTCMinutes() == 0) {
+        if ((date.getUTCHours() + user.timezoneOffset)%24 == 0 && date.getUTCMinutes() == 0) {
             DB.resetDailyCounter(user.discordId);
         }
     })
