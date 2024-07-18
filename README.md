@@ -25,7 +25,7 @@ Users can also decide to set their own channel where they can display their scor
 To link your profile to the bot, the first thing that you need to do is to login on the Quaver website. Then, go to the settings section, and add your Discord tag under the Profile Information section. Save the modifications, then head on to Discord, and use the ``/link-account`` command.
 
 ### Why are some of my scores not registered ?
-The scores made on unranked / unsubmitted map or with specific mods (aka mods that  would prevent a score from being submitted to the global leaderboard) cannot be tracked by the bot if you're not donator on Quaver. 7K scores have also been temporarily disabled to lower API calls. (it is planned to be enabled once again in the future)
+The scores made on unranked / unsubmitted map or with specific mods (aka mods that would prevent a score from being submitted to any ranked leaderboard) cannot be tracked by the bot anymore. 7K scores have also been temporarily disabled to lower API calls. (it is planned to be enabled once again in the future)
 
 ### How can I set a background image for my session's graph result ?
 Using the ``/edit-session`` command, you will be able to edit few settings regarding your sessions. One of them is about the background image used for the session's graph. The ideal dimensions for the picture used are 500x300 (automaticaly scaled). You can find a template for the background image in the resource folder !
