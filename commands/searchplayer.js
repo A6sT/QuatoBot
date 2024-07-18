@@ -21,7 +21,7 @@ export default {
             const name = interaction.options.getString('username');
 
             // Récupérer tout les joueurs trouvés
-            axios.get('https://api.quavergame.com/v1/users/search/' + name).then(async function (res) {
+            axios.get('https://api.quavergame.com/v2/user/search/' + name).then(async function (res) {
                 const infos = res.data.users;
 
                 if (infos.length > 1) {

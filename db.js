@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import {MongoClient} from 'mongodb';
+import { MongoClient, ObjectId } from 'mongodb';
 
 // ============================== DB ==============================
 
@@ -104,7 +104,7 @@ class DB {
                     "personalChannel.$.channel": channelId
                 }
             }
-        // Sinon, on crée un nouvel élement dans la liste
+            // Sinon, on crée un nouvel élement dans la liste
         } else {
             condition = { serverId: serverId };
             updatedServer = {
@@ -245,8 +245,8 @@ class DB {
             dailyRank4k: 0,
             dailyRank7k: 0
         }
-        db.collection("user").insertOne(newUser, function(err, res){
-            if(err) throw err;
+        db.collection("user").insertOne(newUser, function (err, res) {
+            if (err) throw err;
             console.log(`user ${quaverId} (${discordId}) has registered !`);
         })
     }
@@ -260,7 +260,7 @@ class DB {
                 ...(mode == 7) && { globalRank7k: newGlobalRank, dailyRank4k: newDailyRank },
             }
         }
-            
+
         this.clientDb.db(this.env).collection("user").updateOne({ discordId: discordId }, updatedUser)
     }
 
@@ -395,9 +395,9 @@ class DB {
         sessions.forEach(async (session) => {
             let user = await this.getUser(session.discordId);
             let isMaxDurationReached = false;
-            
+
             // If the user left the server before ending his session, destroy the session
-            if(user == null){
+            if (user == null) {
                 this.destroySession(session.discordId);
                 return;
             }
@@ -433,8 +433,8 @@ class DB {
             "performance_rating": score.score.performance_rating,
             "accuracy": score.score.accuracy,
             "max_combo": score.score.max_combo,
-            "ratio": score.score.ratio,
-            "personal_best": score.score.personal_best,
+            "ratio": score.score.count_marvelous / (score.score.count_perfect + score.score.count_great + score.score.count_good + score.score.count_okay + score.score.count_miss),
+            "is_personal_best": score.score.is_personal_best,
             "count_miss": score.score.count_miss
         }
 
@@ -450,7 +450,6 @@ class DB {
             }
         }
         await this.clientDb.db(this.env).collection("session").updateOne({ discordId: discordId }, updatedSession);
-        //this.addAllTimeScore(discordId, newScore);
     }
 
     // Supprimer une session de la db
@@ -496,26 +495,6 @@ class DB {
     // Supprimer une salle multijoueur de la db
     deleteMultiplayerRoom(roomId) {
         this.clientDb.db(this.env).collection("multiplayer").findOneAndDelete({ roomId: roomId })
-    }
-
-    /// DEPRECATED
-    // ============================== Scores ==============================
-    
-    // Ajouter un score au résumé total de l'utilisateur
-    async addAllTimeScore(discordId, score) {
-        let newAllTimeScore = {
-            discordId: discordId,
-            timestamps: new Date(),
-            mode: score.mode,
-            grade: score.grade,
-            performance_rating: score.performance_rating,
-            accuracy: score.accuracy,
-            max_combo: score.max_combo,
-            ratio: score.ratio,
-            personal_best: score.personal_best,
-            count_miss: score.count_miss,
-        }
-        await this.clientDb.db(this.env).collection("score").insertOne(newAllTimeScore)
     }
 }
 

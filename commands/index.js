@@ -10,7 +10,7 @@ import setchannel from './setchannel.js';
 import editsession from './editsession.js';
 import filter from "./filter.js";
 import personalchannel from './personalchannel.js';
-import gradelist from './gradelist.js';
+import help from './help.js';
 
 export
     let commands = [
@@ -25,6 +25,6 @@ export
         setchannel,
         editsession,
         filter,
-        gradelist,
-        personalchannel
+        personalchannel,
+        help
     ]

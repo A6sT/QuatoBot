@@ -23,6 +23,8 @@ export default {
                                     { name: 'FC Only', value: 'fc' },
                                     { name: 'Personal Best/map Only', value: 'pb' },
                                     { name: 'Hide Fail', value: 'nf' },
+                                    { name: 'Hide Score', value: 'hidescore' },
+                                    { name: 'Hide Session', value: 'hidesession'}
                                 )
                         )
                         .addUserOption(option => option.setName('user').setDescription("The targeted user (empty for yourself)").setRequired(false))
@@ -39,6 +41,8 @@ export default {
                                     { name: 'FC Only', value: 'fc' },
                                     { name: 'Personal Best/map Only', value: 'pb' },
                                     { name: 'Hide Fail', value: 'nf' },
+                                    { name: 'Hide Score', value: 'hidescore' },
+                                    { name: 'Hide Session', value: 'hidesession' }
                                 )
                         )
                         .addUserOption(option => option.setName('user').setDescription("The targeted user (empty for yourself)").setRequired(false))
@@ -60,6 +64,8 @@ export default {
                                     { name: 'FC Only', value: 'fc' },
                                     { name: 'Personal Best/map Only', value: 'pb' },
                                     { name: 'Hide Fail', value: 'nf' },
+                                    { name: 'Hide Score', value: 'hidescore' },
+                                    { name: 'Hide Session', value: 'hidesession' }
                                 )
                         )
                         .addUserOption(option => option.setName('user').setDescription("The targeted user (empty for yourself)").setRequired(false))
@@ -76,6 +82,8 @@ export default {
                                     { name: 'FC Only', value: 'fc' },
                                     { name: 'Personal Best/map Only', value: 'pb' },
                                     { name: 'Hide Fail', value: 'nf' },
+                                    { name: 'Hide Score', value: 'hidescore' },
+                                    { name: 'Hide Session', value: 'hidesession' }
                                 )
                         )
                         .addUserOption(option => option.setName('user').setDescription("The targeted user (empty for yourself)").setRequired(false))

@@ -50,7 +50,7 @@ export default {
             let personalChannel = await DB.getPersonalChannel(currentServer.serverId, user.discordId);
 
             const serverCache = interaction.client.guilds.cache.get(currentServer.serverId);
-            if (currentServer.sessionChannel != "") {
+            if (currentServer.sessionChannel != "" && !user.filter.includes("hidesession")) {
 
                 // Envoie du message dans le channel global
                 const globalChannel = serverCache.channels.cache.get(currentServer.sessionChannel);
@@ -58,7 +58,7 @@ export default {
                     await showSession(currentServer.language, globalChannel, session, null, commentaire);
                 }
             }
-            if (personalChannel != null) {
+            if (personalChannel != null && !personalChannel.filter.includes("hidesession")) {
 
                 // Envoie du message dans le channel perso
                 const channelPerso = serverCache.channels.cache.get(personalChannel.channel);
