@@ -60,10 +60,9 @@ client.once('ready', function () {
     client.user.setPresence({
         activities: [{ name: `Quaver`, type: ActivityType.Playing }]
     });
-     
     // Récuperer toutes les commandes crées
     registerCommands();
-    
+
     setInterval(main, 30 * 1000);
     setInterval(manageSessions, parseInt(process.env.REFRESH_SESSION_RATE) * 1000);
     console.log("started");
@@ -301,8 +300,8 @@ export function getGradeColor(grade) {
 // Filter submittable scores
 export function isScoreFiltered(filters, score) {
     let isScoreFiltered = false;
-    filters.forEach(filtre => {
-        switch (filtre) {
+    for (let i = 0; i < filters.length && !isScoreFiltered; i++) {
+        switch (filters[i]) {
             case "pb":
                 isScoreFiltered = !score.personal_best;
                 break;
@@ -312,8 +311,12 @@ export function isScoreFiltered(filters, score) {
             case "fc":
                 isScoreFiltered = score.count_miss > 0;
                 break;
+            case "hidescore":
+                isScoreFiltered = true;
+                break;
         }
-    })
+    }
+
     return isScoreFiltered;
 }
 
@@ -329,6 +332,12 @@ export function parseFilter(filter) {
             break;
         case "nf":
             parsedFilter = "Hide Fail";
+            break;
+        case "hidescore":
+            parsedFilter = "Hide Score";
+            break;
+        case "hidesession":
+            parsedFilter = "Hide Session";
             break;
     }
     return parsedFilter;
@@ -352,21 +361,18 @@ export async function linkAccount(serverId, discordId, username, discordTag, qua
     const lang = server.language;
 
     let message = "";
-    await axios.get('https://api.quavergame.com/v1/users/full/' + quaverId).then(async function (res) {
-        const infos = res.data.user.info.information;
+    await axios.get('https://api.quavergame.com/v2/user/' + quaverId).then(async function (res) {
+        const discordIdFound = res.data.user.discord_id;
         const rank4k = res.data.user.keys4.globalRank;
         const rank7k = res.data.user.keys7.globalRank;
 
-        /// Verifier que le compte est valide
-        const discordTagFound = infos == null || infos.discord == '' ? null : infos.discord.split('#')[0].toLowerCase();
-
         // Si le profile n'est associé a aucun compte discord 
-        if (discordTagFound == null) {
+        if (discordIdFound == null) {
             message = `${getLocale(lang, "commandAccountNoDiscordFound", username)}\n*${getLocale(lang, "commandAccountTipsGetId")}*`
             return;
         }
         // Si le profile ne possède pas le meme nom que la personne qui execute la commande
-        else if (discordTagFound != discordTagFound) {
+        else if (discordIdFound != discordId) {
             message = `${getLocale(lang, "commandAccountWrongId", username, discordTagFound, discordTag)}\n*${getLocale(lang, "commandAccountTipsGetId")}*`;
             return;
         }
@@ -387,15 +393,21 @@ export async function buildPlayerProfile(serverId, quaverId, defaultmode = '0') 
 
     let playerRes;
     let graph;
+    let clan;
 
     // Récupération des informations pour construire le profile
-    await axios.get('https://api.quavergame.com/v1/users/full/' + quaverId).then(async function (res) {
+    await axios.get('https://api.quavergame.com/v2/user/' + quaverId).then(async function (res) {
         playerRes = res;
     })
 
     const user = playerRes.data.user;
-    const clan = user.clan;
-    const info = user.info;
+
+    if (user.clan_id != null) {
+        await axios.get(`https://api.quavergame.com/v2/clan/${user.clan_id}`).then(async function (res) {
+            clan = res.data.clan;
+        })
+    }
+    
     let userStats;
 
     // Création des boutons
@@ -411,25 +423,24 @@ export async function buildPlayerProfile(serverId, quaverId, defaultmode = '0') 
 
     switch (defaultmode) {
         case '0':
-            if (info.information.default_mode != null) {
-                defaultmode = info.information.default_mode;
+            if (user.misc_information.default_mode != null) {
+                defaultmode = user.misc_information.default_mode;
             } else {
                 defaultmode = '1';
             }
-        // Pas de break !!!
         case '1':
-            userStats = user.keys4;
+            userStats = user.stats_keys4;
             button4k.setDisabled(true);
             break;
         case '2':
             button7k.setDisabled(true);
-            userStats = user.keys7;
+            userStats = user.stats_keys7;
             break;
     }
     buttons.addComponents(button4k, button7k);
 
-    await axios.get('https://api.quavergame.com/v1/users/graph/rank?id=' + quaverId + '&mode=' + defaultmode).then(async function (res) {
-        graph = res.data.statistics;
+    await axios.get(`https://api.quavergame.com/v2/user/${quaverId}/statistics/${defaultmode}/rank`).then(async function (res) {
+        graph = res.data.ranks;
     })
 
     // Création du message
@@ -439,25 +450,25 @@ export async function buildPlayerProfile(serverId, quaverId, defaultmode = '0') 
     const blank = { name: `\u200b`, value: `\u200b`, inline: true };
 
     // Affichage des classement
-    const globalRank = userStats.globalRank;
-    const country = info.country;
-    const countryRank = userStats.countryRank;
-    const multiplayerRank = userStats.multiplayerWinRank;
-    fields.push({ name: getLocale(lang, 'embedPlayerProfileRank'), value: `Global: ${globalRank}\n:flag_${country.toLowerCase()}: : ${countryRank}\n Multi: ${multiplayerRank}`, inline: true });
+    const globalRank = userStats.ranks.global;
+    const countryRank = userStats.ranks.country;
+    const country = user.country;
+    const hitRank = userStats.ranks.total_hits;
+    fields.push({ name: getLocale(lang, 'embedPlayerProfileRank'), value: `Global: ${globalRank}\n:flag_${country.toLowerCase()}: : ${countryRank}\nHits: ${hitRank}`, inline: true });
 
     // Affichage de l'overall rating
-    const overallRating = userStats.stats.overall_performance_rating;
+    const overallRating = userStats.overall_performance_rating;
     const avgRatingToGainOR = overallRating / 20;
     fields.push({ name: `Overall Rating`, value: `${convertIntegerToString(Math.round(overallRating * 100) / 100)}\n≃ ${convertIntegerToString(Math.round(avgRatingToGainOR * 100) / 100)} PR/Map`, inline: true });
 
     // Affichage de l'overall accuracy et du ratio
-    const overallAccuracy = userStats.stats.overall_accuracy;
-    const ratio = userStats.stats.total_marv / (userStats.stats.total_perf + userStats.stats.total_great + userStats.stats.total_good + userStats.stats.total_okay + userStats.stats.total_miss);
+    const overallAccuracy = userStats.overall_accuracy;
+    const ratio = userStats.total_marvelous / userStats.total_perfect;
     fields.push({ name: `Overall Accuracy`, value: `${convertIntegerToString(Math.round(overallAccuracy * 100) / 100)}\nRatio: ${convertIntegerToString(Math.round(ratio * 100) / 100)}`, inline: true });
 
     // Affichage du clan
     fields.push(blank);
-    fields.push({ name: `Clan`, value: `${clan == "null" ? clan : 'Not implemented yet'}`, inline: true })
+    fields.push({ name: `Clan`, value: `${clan == null ? "None" : `[${clan.tag}] ${clan.name}`}`, inline: true })
     fields.push(blank);
 
     // Gestion des dates
@@ -469,14 +480,14 @@ export async function buildPlayerProfile(serverId, quaverId, defaultmode = '0') 
         case 'en':
             dateactivityFormat = { year: 'numeric', month: 'long', weekday: 'long', day: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true };
     }
-    const latestActivity = new Date(info.latest_activity).toLocaleDateString(lang, dateactivityFormat);
-    const playSince = new Date(info.time_registered).toLocaleDateString(lang, { year: 'numeric', month: 'long', day: 'numeric' });
+    const latestActivity = new Date(user.latest_activity).toLocaleDateString(lang, dateactivityFormat);
+    const playSince = new Date(user.time_registered).toLocaleDateString(lang, { year: 'numeric', month: 'long', day: 'numeric' });
 
     const userInfo = new EmbedBuilder()
         .setColor('#E8E8E8')
-        .setAuthor({ name: `${getLocale(lang, "embedPlayerProfileTitle", info.username)} - ${defaultmode == '1' ? '4' : '7'}K`, iconURL: null, url: `https://quavergame.com/user/${info.id}` }) // Info sur le joueur
+        .setAuthor({ name: `${getLocale(lang, "embedPlayerProfileTitle", user.username)} - ${defaultmode == '1' ? '4' : '7'}K`, iconURL: null, url: `https://quavergame.com/user/${user.id}` }) // Info sur le joueur
         .setDescription("\u200b")
-        .setThumbnail(info.avatar_url) // PfP
+        .setThumbnail(user.avatar_url) // PfP
         .addFields(fields)
         .setFooter({ text: `${getLocale(lang, "embedPlayerProfileLastestActivity", latestActivity)}\n${getLocale(lang, "embedPlayerProfilePlaySince", playSince)}` })
 

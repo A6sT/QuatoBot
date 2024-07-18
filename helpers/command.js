@@ -16,6 +16,7 @@ export const handleCommand = async (client, interaction) => {
     } catch (error) {
         console.log("==============");
         console.error(error);
+        console.log(interaction);
         console.log("==============");
     }
 }

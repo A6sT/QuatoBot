@@ -24,7 +24,7 @@ export async function manageSessions() {
                 let personalChannel = await DB.getPersonalChannel(server.serverId, user.discordId);
 
                 const serverCache = client.guilds.cache.get(server.serverId);
-                if (server.sessionChannel != "") {
+                if (server.sessionChannel != "" && !user.filter.includes("hidesession")) {
 
                     // Envoie du message dans le channel global
                     const globalChannel = serverCache.channels.cache.get(server.sessionChannel);
@@ -32,7 +32,7 @@ export async function manageSessions() {
                         await showSession(server.language, globalChannel, session);
                     }
                 }
-                if (personalChannel != null) {
+                if (personalChannel != null && !personalChannel.filter.includes("hidesession")) {
 
                     // Envoie du message dans le channel perso
                     const channelPerso = serverCache.channels.cache.get(personalChannel.channel);
@@ -48,18 +48,17 @@ export async function manageSessions() {
     })
 }
 
-// Afficher la session d'un utilisateur (termin� ou non)
+// Afficher la session d'un utilisateur (terminé ou non)
 export async function showSession(lang, channel, session, interaction = null, commentaire = null) {
-    // R�cuperer les infos sur l'utilisateur de la session
+    // Récuperer les infos sur l'utilisateur de la session
     const user = await DB.getUser(session.discordId);
-    let player, playerInfo;
+    let player;
 
-    await axios.get('https://api.quavergame.com/v1/users/full/' + user.quaverId).then((res) => {
+    await axios.get('https://api.quavergame.com/v2/user/' + user.quaverId).then((res) => {
         player = res.data.user;
-        playerInfo = player.info;
     })
 
-    // Pr�paration des infos pour r�sumer la session
+    // Préparation des infos pour résumer la session
     let performanceRating, difficulty, accuracy, accuracryWithFail, maxCombo, ratio, pbAmount, fcAmount, mapPlayed, mapFailed, graphModes, graphPr, graphGrades, graphDiff, graphAcc;
     performanceRating = difficulty = accuracy = accuracryWithFail = maxCombo = ratio = pbAmount = fcAmount = mapPlayed = mapFailed = 0;
     graphModes = [];
@@ -87,7 +86,7 @@ export async function showSession(lang, channel, session, interaction = null, co
         if (score.max_combo > maxCombo) {
             maxCombo = score.max_combo;
         }
-        if (score.personal_best) {
+        if (score.is_personal_best) {
             pbAmount++;
         }
         if (score.count_miss == 0) {
@@ -185,17 +184,16 @@ export async function showSession(lang, channel, session, interaction = null, co
 
     const embedAbstract = new EmbedBuilder()
         .setColor(getRatingColor(difficulty))
-        .setTitle(getLocale(lang, "embedSessionTitle", playerInfo.username, dateFormat))
-        .setURL(`https://quavergame.com/user/${playerInfo.id}`)
-        .setAuthor({ name: playerInfo.username, iconURL: playerInfo.avatar_url }) // Info sur le joueur
+        .setTitle(getLocale(lang, "embedSessionTitle", player.username, dateFormat))
+        .setURL(`https://quavergame.com/user/${player.id}`)
+        .setAuthor({ name: player.username, iconURL: player.avatar_url }) // Info sur le joueur
         .setDescription(commentaire)
         .addFields(fields)
         .setImage(sessionGraph)
         .setFooter({ text: `${getLocale(lang, "embedSessionTimeDuration")}: ${convertIntegerToTime(session.sessionTimeDuration)}` })
-        .setTimestamp()
 
-    if (playerInfo.avatar_url != null) {
-        embedAbstract.setThumbnail(`${playerInfo.avatar_url}`);
+    if (player.avatar_url != null) {
+        embedAbstract.setThumbnail(`${player.avatar_url}`);
     }
 
     // Si la demande de vision de session est issue d'une interaction (/showSession)
