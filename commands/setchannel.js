@@ -31,12 +31,12 @@ export default {
 
             await interaction.deferReply({ ephemeral: true });
 
-            // Check si le channel existe et est textuel
+            // Check if the channel exist and is text-only
             if (channel.type != 0) {
                 return interaction.editReply({ content: getLocale(lang, "commandChannelIsNotTextual", channel.toString()) });
             }
 
-            // Sauvegarde du nouveau channel
+            // Save the new channel
             switch (choice) {
                 case 'session':
                     await DB.setSessionChannel(serverId, channel.id);

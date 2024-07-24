@@ -19,7 +19,7 @@ export default {
 
         await interaction.deferReply({ephemeral: true});
 
-        // Vérifier que l'utilisateur est link
+        // Check if the user is linked
         const user = await DB.getUser(discordId);
         if (!user) {
             return interaction.editReply({ content: getLocale(lang, "commandAccountNotLinked")});

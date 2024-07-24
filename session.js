@@ -4,17 +4,17 @@ import Chart from './chart.js';
 import { EmbedBuilder } from 'discord.js';
 import { getLocale, getRatingColor, convertIntegerToTime, convertIntegerToString, client } from './index.js';
 
-// Gestion des sessions de jeu
+// Manage the game sessions
 export async function manageSessions() {
 
-    // Mise a jour des sessions actives
+    // Update all actives sessions
     await DB.updateActiveSession();
 
-    // Envois des informations sur les sessions inactives et suppression
+    // Send infos about all inactive sessions, and delete them
     const expiredSessions = await DB.getExpiredSessions();
     expiredSessions.forEach(async (session) => {
 
-        // On affiche uniquement le r�sum� pour les sessions ayant au moins 5 score
+        // Only the sessions that have at least 5 scores are displayed
         if (session.scores.length >= 5) {
             const user = await DB.getUser(session.discordId);
             const servers = await DB.getServersList(user == null ? null : user.server);
@@ -26,7 +26,7 @@ export async function manageSessions() {
                 const serverCache = client.guilds.cache.get(server.serverId);
                 if (server.sessionChannel != "" && !user.filter.includes("hidesession")) {
 
-                    // Envoie du message dans le channel global
+                    // Send recap in global channel
                     const globalChannel = serverCache.channels.cache.get(server.sessionChannel);
                     if (globalChannel.permissionsFor(serverCache.members.me).toArray().includes("SendMessages")) {
                         await showSession(server.language, globalChannel, session);
@@ -34,23 +34,20 @@ export async function manageSessions() {
                 }
                 if (personalChannel != null && !personalChannel.filter.includes("hidesession")) {
 
-                    // Envoie du message dans le channel perso
+                    // Send recap in personal channel
                     const channelPerso = serverCache.channels.cache.get(personalChannel.channel);
                     if (channelPerso.permissionsFor(serverCache.members.me).toArray().includes("SendMessages")) {
                         await showSession(server.language, channelPerso, session);
                     }
                 }
-
             }
-
         }
         DB.destroySession(session.discordId);
     })
 }
 
-// Afficher la session d'un utilisateur (terminé ou non)
-export async function showSession(lang, channel, session, interaction = null, commentaire = null) {
-    // Récuperer les infos sur l'utilisateur de la session
+// Display the game session of a user (finished or not)
+export async function showSession(lang, channel, session, interaction = null, comment = null) {
     const user = await DB.getUser(session.discordId);
     let player;
 
@@ -58,7 +55,6 @@ export async function showSession(lang, channel, session, interaction = null, co
         player = res.data.user;
     })
 
-    // Préparation des infos pour résumer la session
     let performanceRating, difficulty, accuracy, accuracryWithFail, maxCombo, ratio, pbAmount, fcAmount, mapPlayed, mapFailed, graphModes, graphPr, graphGrades, graphDiff, graphAcc;
     performanceRating = difficulty = accuracy = accuracryWithFail = maxCombo = ratio = pbAmount = fcAmount = mapPlayed = mapFailed = 0;
     graphModes = [];
@@ -93,7 +89,7 @@ export async function showSession(lang, channel, session, interaction = null, co
             fcAmount++;
         }
 
-        // Prise d'information pour le graphique
+        // Graph infos
         graphModes.push(score.mode);
         graphPr.push(score.performance_rating);
         graphGrades.push(score.grade);
@@ -122,9 +118,9 @@ export async function showSession(lang, channel, session, interaction = null, co
         difficulty = "0.00";
     }
 
-    // Cr�ation des fields pour l'embed de la session
-    if (commentaire == null) {
-        commentaire = getLocale(lang, "embedSessionDefaultCommentary", `<@${user.discordId}>`);
+    // Preparing fields for the embed
+    if (comment == null) {
+        comment = getLocale(lang, "embedSessionDefaultCommentary", `<@${user.discordId}>`);
     }
     const fields = [];
     const blank = { name: `\u200b`, value: `\u200b`, inline: true };
@@ -147,7 +143,7 @@ export async function showSession(lang, channel, session, interaction = null, co
     fields.push({ name: getLocale(lang, "embedSessionFCs"), value: fcAmount.toString(), inline: true })
     // ?
     fields.push(blank);
-    // Maps jou�s
+    // Maps played
     fields.push({ name: getLocale(lang, "embedSessionMapPlayed"), value: mapPlayed.toString(), inline: true });
     // Maps fail
     fields.push({ name: getLocale(lang, "embedSessionMapFailed"), value: mapFailed.toString(), inline: true });
@@ -165,7 +161,7 @@ export async function showSession(lang, channel, session, interaction = null, co
         fields.push({ name: getLocale(lang, "embedSessionRankProgress") + " - 7K", value: session.initialRank7k.toString() + " -> " + (session.initialRank7k - session.gainedRank7k).toString(), inline: true });
     }
 
-    // Creation du Graph
+    // Creating the graph
     const prefs = {}
     prefs.imageUrl = user.sessionImageUrl;
     prefs.difficultyLineColor = user.sessionDifficultyLineColor;
@@ -186,8 +182,8 @@ export async function showSession(lang, channel, session, interaction = null, co
         .setColor(getRatingColor(difficulty))
         .setTitle(getLocale(lang, "embedSessionTitle", player.username, dateFormat))
         .setURL(`https://quavergame.com/user/${player.id}`)
-        .setAuthor({ name: player.username, iconURL: player.avatar_url }) // Info sur le joueur
-        .setDescription(commentaire)
+        .setAuthor({ name: player.username, iconURL: player.avatar_url })
+        .setDescription(comment)
         .addFields(fields)
         .setImage(sessionGraph)
         .setFooter({ text: `${getLocale(lang, "embedSessionTimeDuration")}: ${convertIntegerToTime(session.sessionTimeDuration)}` })
@@ -196,12 +192,12 @@ export async function showSession(lang, channel, session, interaction = null, co
         embedAbstract.setThumbnail(`${player.avatar_url}`);
     }
 
-    // Si la demande de vision de session est issue d'une interaction (/showSession)
+    // If this function is called from a specific command (/showSession)
     if (interaction != null) {
         return interaction.editReply({ embeds: [embedAbstract] });
     }
 
-    // Si la demande provient d'une autre source (/end-session OU automatique)
+    // If this function is called from somewhere else (/end-session or auto)
     return channel.send({ embeds: [embedAbstract] });
 }
 

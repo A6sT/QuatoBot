@@ -20,7 +20,7 @@ export default {
             const server = await DB.getServer(serverId);
             const lang = server.language;
 
-            // Si le compte est déja lié
+            // Check if the user is already linked
             let user = await DB.getUser(accountId);
 
             if (user != null) {
@@ -32,12 +32,12 @@ export default {
                 return interaction.reply({ content: getLocale(lang, "commandAccountLinkedToServer"), ephemeral: true });
             }
 
-            /// Tenter de lier l'utilisateur au bot
+            /// Try to link the Quaver account to Discord
 
-            // Chercher le compte associé au nom d'utilisateur renseigné
+            // Find the associated name
             const name = interaction.options.getString('username');
 
-            // Récupérer tout les joueurs trouvés
+            // Get all player that match that name
             axios.get('https://api.quavergame.com/v2/user/search/' + name).then(async function (res) {
                 const infos = res.data.users;
 
@@ -55,7 +55,7 @@ export default {
                     return await interaction.reply({ content: getLocale(lang, "commandSearchSelectMessage"), components: [row], ephemeral: true });
                 }
                 else if (infos.length == 1) {
-                    // Si il n'y a qu'un seul joueur, on tente directement de lier ce joueur
+                    // If only one player is found through that request, try to link that player to the bot directly
                     const message = await linkAccount(serverId, accountId, name, interaction.user.username, infos[0].id);
                     return interaction.reply({ content: message, ephemeral: true });
                 }

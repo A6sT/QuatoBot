@@ -14,8 +14,6 @@ import en from './local/en-US.json' assert { type: "json" };
 
 
 // ============================== index.js ===============================
-
-// Préparation du bot
 const rest = new REST({ version: '9' }).setToken(process.env.DISCORD_TOKEN);
 export const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 client.commands = new Collection();
@@ -24,43 +22,41 @@ for (const command of Object.values(commands)) {
     client.commands.set(command.data.name, command);
 }
 
-// Préparation des traductions
+// Available translations
 const strings = {
     fr: fr,
     en: en
 }
 
-// Lorsque le bot arrive sur un nouveau serveur
+// When the bot join a new server
 client.on('guildCreate', (server) => {
     registerCommands(server.id);
     DB.createServer(server.id);
 })
 
-// Lorsque le bot quitte un serveur
+// When the bot leave a server
 client.on('guildDelete', (server) => {
     DB.deleteServer(server.id);
 })
 
-// Lorsqu'un channel est delete
 client.on('channelDelete', (channel) => {
     const channelId = channel.id;
     const serverId = channel.guildId;
     DB.findAndNullifyChannel(serverId, channelId);
 })
 
-// Lorsqu'un utilisateur quitte un serveur
+// When a user leave a server
 client.on('guildMemberRemove', (member) => {
     const discordId = member.id;
     const serverId = member.guild.id;
     DB.removeServerFromUser(discordId, serverId);
 })
 
-// Fonction de lancement du bot
+// When the bot start
 client.once('ready', function () {
     client.user.setPresence({
         activities: [{ name: `Quaver`, type: ActivityType.Playing }]
     });
-    // Récuperer toutes les commandes crées
     registerCommands();
 
     setInterval(main, 30 * 1000);
@@ -74,7 +70,7 @@ client.on('interactionCreate', async interaction => {
         handleCommand(client, interaction);
     }
 
-    // ===== Gestion de commande /search =====
+    // ===== Handle the /search command =====
     // SelectMenu
 
     if (interaction.isStringSelectMenu()) {
@@ -96,7 +92,7 @@ client.on('interactionCreate', async interaction => {
 
     // Buttons
     if (interaction.isButton()) {
-        // Si l'interaction avec le bouton correspond au 4k / 7k (bouton d'une autre cmd par exemple)
+        // Check if the interaction is with the 4k / 7k button
         if (interaction.customId.charAt(0) === '1' || interaction.customId.charAt(0) === '2') {
             interaction.deferUpdate();
             const playerProfile = await buildPlayerProfile(interaction.guildId, interaction.customId.substring(2, interaction.customId.length), interaction.customId.charAt(0));
@@ -118,25 +114,25 @@ client.on('interactionCreate', async interaction => {
             let difficultyLineColor = interaction.fields.getTextInputValue('difficulty-color');
             let accuracyLineColor = interaction.fields.getTextInputValue('accuracy-color');
 
-            // Vérifier que le temps renseigné est valide
+            // Check if time input is valid
             if (idleTime != '' && (parseInt(idleTime) < 30 || parseInt(idleTime) > 180)) {
                 return interaction.editReply({ content: getLocale(lang, "commandEditSessionIdleTimeOutOfRange") });
             }
             fieldToUpdate.sessionIdleTime = idleTime == '' ? 1800 : parseInt(idleTime) * 60;
 
-            // Vérifier que la timezone renseignée est valide
+            // Check if timezone input is valid
             if (timezone != '' && (parseInt(timezone) < -12 || parseInt(timezone) > 14)) {
                 return interaction.editReply({ content: getLocale(lang, "commandEditSessionTimezoneOutOfRange", timezone) });
             }
             fieldToUpdate.timezoneOffset = timezone == '' ? 0 : parseInt(timezone);
 
-            // Vérifier si l'image renseignée est valide
+            // Check if image input is valid
             if (imageUrl != '' && !/\.(jpg|jpeg|png|webp|svg)$/.test(imageUrl)) {
                 return interaction.editReply({ content: getLocale(lang, "commandEditSessionNotAnImage") });
             }
             fieldToUpdate.sessionImageUrl = imageUrl;
 
-            // Vérifier si la couleur renseignée est valide
+            // Check if color input is valid
             if (difficultyLineColor != '' && !/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(difficultyLineColor)) {
                 return interaction.editReply({ content: getLocale(lang, "commandEditSessionNotAColor") });
             }
@@ -147,10 +143,9 @@ client.on('interactionCreate', async interaction => {
             }
             fieldToUpdate.sessionAccuracyLineColor = accuracyLineColor;
 
-            // Sauvegarde des nouvelles infos
             await DB.setSessionInfo(discordId, fieldToUpdate);
 
-            // Creation du Graph
+            // Creating an example graph
             const user = await DB.getUser(discordId);
 
             const graphModes = [1, 1, 1, 2, 2, 2, 1, 2, 1, 2];
@@ -171,13 +166,13 @@ client.on('interactionCreate', async interaction => {
     }
 });
 
-// ============================== Autres =================================
+// ============================== Others =================================
 
 client.login(process.env.DISCORD_TOKEN);
 
-// ============================== Fonctions ==============================
+// ============================== Functions ==============================
 
-// Enregistre les nouvelles commandes dans le bot
+// Register all commands for each server
 function registerCommands(newGuildId = null) {
     const commandList = [];
     for (const command of commands) {
@@ -204,7 +199,7 @@ function registerCommands(newGuildId = null) {
     })();
 }
 
-// Effectuer une action sur tout les serveur et notifier
+// Sends a message to every server
 async function globalMessageAction(title, message) {
 
     // Global server warning
@@ -217,8 +212,6 @@ async function globalMessageAction(title, message) {
     const servers = await DB.getServers();
     for (let i = 0; i < servers.length; i++) {
         if (servers[i].scoreChannel != "") {
-
-            // Envoie du message
             const server = client.guilds.cache.get(servers[i].serverId);
             const channel = server.channels.cache.get(servers[i].scoreChannel);
             if (channel.permissionsFor(server.members.me).toArray().includes("SendMessages")) {
@@ -229,7 +222,7 @@ async function globalMessageAction(title, message) {
 
 }
 
-// Convert difficulty writing to stdr difficulty printing in Quaver
+// Convert a number to Quaver difficulty format
 export function convertIntegerToString(number) {
     if (isNaN(number) || number == "0" || number == 0) { return "0"; }
 
@@ -266,7 +259,7 @@ export function convertIntegerToTime(number) {
     return hours + minutes;
 }
 
-// Get Color from grade
+// Get associated Quaver color grade from grade letter
 export function getGradeColor(grade) {
     let color;
     switch (grade) {
@@ -297,7 +290,7 @@ export function getGradeColor(grade) {
     return color;
 }
 
-// Filter submittable scores
+// Filter score submitted to a discord channel
 export function isScoreFiltered(filters, score) {
     let isScoreFiltered = false;
     for (let i = 0; i < filters.length && !isScoreFiltered; i++) {
@@ -343,7 +336,7 @@ export function parseFilter(filter) {
     return parsedFilter;
 }
 
-// Get Color from rating
+// Get Quaver difficulty color from rating
 export function getRatingColor(rating) {
     if (rating < 1) return "#D1FFFA";
     if (rating < 2.5) return "#5EFF75";
@@ -355,7 +348,7 @@ export function getRatingColor(rating) {
     return "#B7B7B7";
 }
 
-// Essayer de lier un compte discord a un compte Quaver
+// Try to link a Discord account to a Quaver account (from /link-account command)
 export async function linkAccount(serverId, discordId, username, discordTag, quaverId) {
     const server = await DB.getServer(serverId);
     const lang = server.language;
@@ -366,19 +359,18 @@ export async function linkAccount(serverId, discordId, username, discordTag, qua
         const rank4k = res.data.user.keys4.globalRank;
         const rank7k = res.data.user.keys7.globalRank;
 
-        // Si le profile n'est associé a aucun compte discord 
+        // Check if the Quaver profile has a discord account
         if (discordIdFound == null) {
             message = `${getLocale(lang, "commandAccountNoDiscordFound", username)}\n*${getLocale(lang, "commandAccountTipsGetId")}*`
             return;
         }
-        // Si le profile ne possède pas le meme nom que la personne qui execute la commande
+        // Check if that Discord account is the same as the user who executed the command
         else if (discordIdFound != discordId) {
             message = `${getLocale(lang, "commandAccountWrongId", username, discordTagFound, discordTag)}\n*${getLocale(lang, "commandAccountTipsGetId")}*`;
             return;
         }
 
-        /// Le compte est valide
-        // Liaison du compte discord -> quaver
+        /// The account is valid 
         await DB.createUser(serverId, discordId, quaverId, rank4k, rank7k);
 
         message = getLocale(lang, "commandAccountLinked");
@@ -386,7 +378,7 @@ export async function linkAccount(serverId, discordId, username, discordTag, qua
     return message;
 }
 
-// Afficher le profile d'un joueur
+// Show a Quaver player profile (from /search-player command)
 export async function buildPlayerProfile(serverId, quaverId, defaultmode = '0') {
     const server = await DB.getServer(serverId);
     const lang = server.language;
@@ -395,7 +387,6 @@ export async function buildPlayerProfile(serverId, quaverId, defaultmode = '0') 
     let graph;
     let clan;
 
-    // Récupération des informations pour construire le profile
     await axios.get('https://api.quavergame.com/v2/user/' + quaverId).then(async function (res) {
         playerRes = res;
     })
@@ -410,7 +401,6 @@ export async function buildPlayerProfile(serverId, quaverId, defaultmode = '0') 
     
     let userStats;
 
-    // Création des boutons
     const buttons = new ActionRowBuilder();
     const button4k = new ButtonBuilder()
         .setCustomId('1_' + quaverId)
@@ -443,35 +433,35 @@ export async function buildPlayerProfile(serverId, quaverId, defaultmode = '0') 
         graph = res.data.ranks;
     })
 
-    // Création du message
+    /// Creating the reply
 
-    // Création des différents fields du message
+    // Preparing each field
     const fields = [];
     const blank = { name: `\u200b`, value: `\u200b`, inline: true };
 
-    // Affichage des classement
+    // Ranking related fields
     const globalRank = userStats.ranks.global;
     const countryRank = userStats.ranks.country;
     const country = user.country;
     const hitRank = userStats.ranks.total_hits;
     fields.push({ name: getLocale(lang, 'embedPlayerProfileRank'), value: `Global: ${globalRank}\n:flag_${country.toLowerCase()}: : ${countryRank}\nHits: ${hitRank}`, inline: true });
 
-    // Affichage de l'overall rating
+    // Overall rating stuff
     const overallRating = userStats.overall_performance_rating;
     const avgRatingToGainOR = overallRating / 20;
     fields.push({ name: `Overall Rating`, value: `${convertIntegerToString(Math.round(overallRating * 100) / 100)}\n≃ ${convertIntegerToString(Math.round(avgRatingToGainOR * 100) / 100)} PR/Map`, inline: true });
 
-    // Affichage de l'overall accuracy et du ratio
+    // Overall accuracy and ratio
     const overallAccuracy = userStats.overall_accuracy;
     const ratio = userStats.total_marvelous / userStats.total_perfect;
     fields.push({ name: `Overall Accuracy`, value: `${convertIntegerToString(Math.round(overallAccuracy * 100) / 100)}\nRatio: ${convertIntegerToString(Math.round(ratio * 100) / 100)}`, inline: true });
 
-    // Affichage du clan
+    // Clan stuff
     fields.push(blank);
     fields.push({ name: `Clan`, value: `${clan == null ? "None" : `[${clan.tag}] ${clan.name}`}`, inline: true })
     fields.push(blank);
 
-    // Gestion des dates
+    // Manage date formats
     let dateactivityFormat;
     switch (lang) {
         case 'fr':
@@ -491,13 +481,13 @@ export async function buildPlayerProfile(serverId, quaverId, defaultmode = '0') 
         .addFields(fields)
         .setFooter({ text: `${getLocale(lang, "embedPlayerProfileLastestActivity", latestActivity)}\n${getLocale(lang, "embedPlayerProfilePlaySince", playSince)}` })
 
-    const rankGraph = Chart.createGraph(graph); // Création du graphique
+    const rankGraph = Chart.createGraph(graph); // Ranking graph (same as website)
     userInfo.setImage(await rankGraph.getShortUrl());
 
     return [userInfo, buttons];
 }
 
-// Construire un embed qui affiche les infos d'un utilisateur
+// Create an embed that displays the user internal infos
 export function buildUserInfos(lang, user) {
     let dateFormat;
     switch (lang) {
@@ -523,7 +513,7 @@ export function buildUserInfos(lang, user) {
     return userInfo;
 }
 
-// Function to get locales and replace variables
+// Function to get translations and replace variables
 export function getLocale(language, string, ...vars) {
     let locale = strings[language][string];
 

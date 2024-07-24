@@ -44,18 +44,18 @@ export default {
 
             await interaction.deferReply({ ephemeral: true });
             
-            // Récupérer le contexte de la commande
+            // Get command Context
             switch (subCommand) {
                 case 'set':
                     player = interaction.options.getUser('player');
                     channel = interaction.options.getChannel('channel');
 
-                    // Vérifie que le channel est textuel
+                    // Check if the channel is text-only
                     if (channel.type != 0) {
                         return interaction.editReply({ content: getLocale(lang, "commandChannelIsNotTextual", channel.toString())});
                     }
 
-                    // Vérifie que le joueur existe
+                    // Check if the user exists and is linked
                     user = await DB.getUser(player.id);
                     if (user == null) {
                         return interaction.editReply({ content: getLocale(lang, "commandUserNotLinked", player)})
@@ -67,21 +67,19 @@ export default {
                 case 'unset':
                     player = interaction.options.getUser('player');
 
-                    // Vérifie que le joueur existe
+                    // Check if the user exists and is linked
                     user = await DB.getUser(player.id);
                     if (user == null) {
                         return interaction.editReply({ content: getLocale(lang, "commandUserNotLinked", player)})
                     }
 
-                    // Vérifie que le joueur est lié a un channel
+                    // Check if that user is linked to a channel already
                     const personalChannel = await DB.getPersonalChannel(serverId, user.discordId);
                     if (personalChannel == null) {
                         return interaction.editReply({ content: getLocale(lang, "commandPersonnalChannelUserNotSetToChannel", player)})
                     }
 
-                    // Délier le joueur du channel
                     await DB.unsetPersonalChannel(serverId, user.discordId)
-
                     return interaction.editReply({ content: getLocale(lang, "commandPersonnalChannelUnsetChannel", player)})
 
                 case 'history':

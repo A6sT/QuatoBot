@@ -117,35 +117,34 @@ export default {
         let scope = "";
         let enabledFilters;
 
-        // Vérifier que l'utilisateur est lié
+        // Check if the user is linked to the bot
         if (user == null) {
             return interaction.editReply({ content: getLocale(lang, "commandAccountUserNotLinked", `<@${discordId}>`)})
         }
 
-        // Mise en place des filtres selon les options choisis
+        // Setting up filters
         switch (subCommandGroup) {
 
             case "perso":
                 const personnalChannel = await DB.getPersonalChannel(serverId, discordId);
-                // Vérifie que l'utilisateur a un channel perso
+                // Check if the user has a personal channel
                 if (personnalChannel == null) {
                     return interaction.editReply({ content: getLocale(lang, "commandFilterUserHaveNoPersonnalChannel", `<@${discordId}>`)})
                 }
                 scope = getLocale(lang, "commandFilterPersonnal");
                 switch (subCommand) {
                     case "add":
-                        // Filtre déjà actif ?
+                        // Is filter active ?
                         if (personnalChannel.filter.includes(selectedOption)) {
                             return interaction.editReply({ content: `[${scope}] ${getLocale(lang, "commandFilterAlreadyActiveForUser", parsedFilter, `<@${discordId}>`)}`});
                         }
 
-                        // Application du filtre
                         await DB.setPersonalFilter(serverId, discordId, selectedOption, true);
                         message = `[${scope}] ${getLocale(lang, "commandFilterEnabled", parsedFilter)}`;
                         break;
 
                     case "remove":
-                        // Filtre déjà actif ?
+                        // Is filter active ?
                         if (!personnalChannel.filter.includes(selectedOption)) {
                             return interaction.editReply({ content: `[${scope}] ${getLocale(lang, "commandFilterAlreadyInactiveForUser", parsedFilter, `<@${discordId}>`)}`});
                         }
@@ -154,7 +153,7 @@ export default {
                         break;
                 }
 
-                // Récuperer les filtres actifs après modification
+                // Get active filter after they have been aplied
                 enabledFilters = await DB.getPersonalFilters(serverId, discordId);
                 break;
 
@@ -162,18 +161,17 @@ export default {
                 scope = getLocale(lang, "commandFilterGlobal");
                 switch (subCommand) {
                     case "add":
-                        // Filtre déjà actif ?
+                        // Is filter active ?
                         if (user.filter.includes(selectedOption)) {
                             return interaction.editReply({ content: `[${scope}] ${getLocale(lang, "commandFilterAlreadyActiveForUser", parsedFilter, `<@${discordId}>`)}`});
                         }
 
-                        // Application du filtre
                         await DB.setGlobalFilter(discordId, selectedOption, true);
                         message = `[${scope}] ${getLocale(lang, "commandFilterEnabled", parsedFilter)}`;
                         break;
 
                     case "remove":
-                        // Filtre déjà actif ?
+                        // Is filter active ?
                         if (!user.filter.includes(selectedOption)) {
                             return interaction.editReply({ content: `[${scope}] ${getLocale(lang, "commandFilterAlreadyInactiveForUser", parsedFilter, `<@${discordId}>`)}`});
                         }
@@ -182,17 +180,17 @@ export default {
                         break;
                 }
 
-                // Récuperer les filtres actifs après modification
+                // Get active filter after they have been aplied
                 enabledFilters = await DB.getGlobalFilters(discordId);
                 break;
         }
 
-        // Envoie du message si il n'y a plus de filtres actif
+        // Send message when there are no filters active
         if (enabledFilters == null) {
             return interaction.editReply({ content: `<@${discordId}> ${message}`});
         }
 
-        // Affichage du message avec résumé des filtres actifs
+        // Send a message with all active filters
         let enabledFiltersMessage = `\n${getLocale(lang, "commandFilterSummary", `<@${discordId}>`)} (${scope})`;
         for (let i = 0; i < enabledFilters.length; i++) {
             enabledFiltersMessage += `\n- ${parseFilter(enabledFilters[i])}`;

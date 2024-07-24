@@ -22,19 +22,17 @@ export default {
 
             await interaction.deferReply({ ephemeral: true });
 
-            // Si le compte n'est pas lié
+            // Check if the account is linked
             if(user == null){
                 return interaction.editReply({ content: getLocale(lang, "commandAccountNotLinked")});
             }
 
-            // Si le compte est lié, mais pas a ce serveur discord
+            // Check if it is linked on the server the command is used on
             if (! user.server.includes(serverId)) {
                 return interaction.editReply({ content: getLocale(lang, "commandRemoveAccountNotLinked")});
             }
             
-            // Supprimer l'utilisateur de la db
             await DB.removeServerFromUser(discordId, serverId);
-            
             return interaction.editReply({ content: getLocale(lang, "commandRemoveAccountUnlinked")});
         }
 

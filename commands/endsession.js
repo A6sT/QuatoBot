@@ -23,25 +23,23 @@ export default {
 
         await interaction.deferReply({ ephemeral: true });
 
-        // Si le compte n'est pas lié
+       // Check if the user is linked to the bot
         if (! await DB.getUser(discordId)) {
             return interaction.editReply({ content: getLocale(lang, "commandAccountNotLinked")});
         }
 
-        // Récupération de la session
+        // Get the current user's session
         let session = await DB.getSession(discordId);
-
-        // Si l'utilisateur n'as pas de session active
         if (session == null) {
             return interaction.editReply({ content: getLocale(lang, "commandEndSessionNoActiveSession")});
         }
 
-        // On affiche uniquement le résumé pour les sessions ayant plus de 6 score
+        // Only display the session if it has at least 6 scores
         if (session.scores.length <= 5) {
             return interaction.editReply({ content: getLocale(lang, "commandEndSessionNotEnoughMapsPlayed")});
         }
 
-        // Affichage et suppression de la session dans tout les serveurs concernés
+        // Display the session to every channels it can be displayed
         const user = await DB.getUser(session.discordId);
         const servers = await DB.getServersList(user.server);
 
@@ -52,7 +50,7 @@ export default {
             const serverCache = interaction.client.guilds.cache.get(currentServer.serverId);
             if (currentServer.sessionChannel != "" && !user.filter.includes("hidesession")) {
 
-                // Envoie du message dans le channel global
+                // Send message in global channel
                 const globalChannel = serverCache.channels.cache.get(currentServer.sessionChannel);
                 if (globalChannel.permissionsFor(serverCache.members.me).toArray().includes("SendMessages")) {
                     await showSession(currentServer.language, globalChannel, session, null, commentaire);
@@ -60,7 +58,7 @@ export default {
             }
             if (personalChannel != null && !personalChannel.filter.includes("hidesession")) {
 
-                // Envoie du message dans le channel perso
+                // Send message in personal channel
                 const channelPerso = serverCache.channels.cache.get(personalChannel.channel);
                 if (channelPerso.permissionsFor(serverCache.members.me).toArray().includes("SendMessages")) {
                     await showSession(currentServer.language, channelPerso, session, null, commentaire);
