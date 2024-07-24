@@ -15,7 +15,6 @@ class Chart {
             rankValues.push(graph[i].rank);
         }
 
-        // Cr�ation du graphique
         const chart = {
             type: 'line',
             data: {
@@ -56,11 +55,6 @@ class Chart {
     }
 
     createSessionGraph(modes, performances, grades, difficulties, accuracies, prefs) {
-        /*console.log("===== DEBUG =====");
-        console.log(modes);
-        console.log("Total scores: "+performances.length);
-        console.log(this.getModeColor(modes));
-        console.log("=================");*/
         let labels = [];
         for (let i = 0; i < performances.length; i++) {
             labels.push(i + 1);

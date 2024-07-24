@@ -17,25 +17,22 @@ export default {
             const server = await DB.getServer(interaction.guildId);
             const lang = server.language;
 
-            // Si le compte n'est pas lié
+            // Check if account is linked
             if (! await DB.getUser(discordId)) {
                 return interaction.reply({ content: getLocale(lang, "commandAccountNotLinked"), ephemeral: true });
             }
 
-            // Récupération de la session
+            // Get current user session
             let session = await DB.getSession(discordId);
-
-            // Si l'utilisateur n'as pas de session active
             if (session == null) {
                 return interaction.reply({ content: getLocale(lang, "commandSessionNoSession"), ephemeral: true });
             }
 
-            // Si la session a moins de 2 scores, on ne l'affiche pas
+            // Only display the session if it has more than 2 scores
             if (session.scores.length < 2) {
                 return interaction.reply({ content: getLocale(lang, "commandSessionNotEnoughScores"), ephemeral: true });
             }
 
-            // Afficher la session en cours de l'utilisateur
             await interaction.deferReply();
             return await showSession(lang, null, session, interaction);
         }

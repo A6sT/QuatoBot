@@ -16,7 +16,7 @@ export default {
             const lang = server.language;
             const discordId = interaction.member.id;
 
-            // Vérifier que l'utilisateur est link
+            // Check if the user is linked to the bot
             const user = await DB.getUser(discordId);
             if (! user) {
                 return interaction.editReply({ content: getLocale(lang, "commandAccountNotLinked"), ephemeral: true });

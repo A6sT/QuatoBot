@@ -20,7 +20,7 @@ export default {
             const lang = server.language;
             const name = interaction.options.getString('username');
 
-            // Récupérer tout les joueurs trouvés
+            // Get all matching players
             axios.get('https://api.quavergame.com/v2/user/search/' + name).then(async function (res) {
                 const infos = res.data.users;
 
@@ -40,7 +40,7 @@ export default {
                 }
                 else if (infos.length == 1) {
                     await interaction.deferReply();
-                    // Si il n'y a qu'un seul joueur, on envoie directement le résumé de ce joueur
+                    // If only one player is found through the request, directly display that user's informations
                     const playerProfile = await buildPlayerProfile(serverId, infos[0].id)
                     return await interaction.editReply({ embeds: [playerProfile[0]], components: [playerProfile[1]] });
                 }
