@@ -41,7 +41,6 @@ class DB {
             language: "en",
             sessionChannel: "",
             scoreChannel: "",
-            multiplayerChannel: "",
             personalChannel: []
         }
         db.collection("server").insertOne(newServer, function (err, res) {
@@ -64,16 +63,6 @@ class DB {
         let updatedServer = {
             $set: {
                 scoreChannel: channelId,
-            }
-        }
-        this.clientDb.db(this.env).collection("server").updateOne({ serverId: serverId }, updatedServer)
-    }
-
-    // Définir le nouveau channel où s'envoie les infos de salles multijoueur
-    setMultiplayerChannel(serverId, channelId) {
-        let updatedServer = {
-            $set: {
-                multiplayerChannel: channelId,
             }
         }
         this.clientDb.db(this.env).collection("server").updateOne({ serverId: serverId }, updatedServer)
@@ -205,10 +194,6 @@ class DB {
 
         if (server.scoreChannel == channelId) {
             updatedServer.$set["scoreChannel"] = "";
-        }
-
-        if (server.multiplayerChannel == channelId) {
-            updatedServer.$set["multiplayerChannel"] = "";
         }
 
         await this.clientDb.db(this.env).collection("server").updateOne({ serverId: serverId }, updatedServer);
@@ -455,46 +440,6 @@ class DB {
     // Supprimer une session de la db
     destroySession(discordId) {
         this.clientDb.db(this.env).collection("session").findOneAndDelete({ discordId: discordId });
-    }
-
-    // ============================== Multiplayer ==============================
-
-    // Récuperer toutes les salles multijoueurs qui sont liés au bot
-    async getMultiplayerRooms() {
-        return await this.clientDb.db(this.env).collection("multiplayer").find().toArray();
-    }
-
-    // Récuperer une salle multijoueur lié au bout
-    async getMultiplayerRoom(roomId) {
-        return await this.clientDb.db(this.env).collection("multiplayer").findOne({ roomId: roomId });
-    }
-
-    // Créer une salle multijoueur
-    async createMultiplayerRoom(roomId, password) {
-        if (await this.getMultiplayerRoom(roomId)) { return; }
-
-        let newRoom = {
-            roomId: roomId,
-            messageId: "",
-            password: password,
-        }
-        await this.clientDb.db(this.env).collection("multiplayer").insertOne(newRoom, function (err, res) {
-            if (err) throw err;
-        })
-    }
-
-    async setMultiplayerRoomMessage(roomId, messageId) {
-        let updatedRoom = {
-            $set: {
-                messageId: messageId
-            }
-        }
-        await this.clientDb.db(this.env).collection("multiplayer").updateOne({ roomId: roomId }, updatedRoom);
-    }
-
-    // Supprimer une salle multijoueur de la db
-    deleteMultiplayerRoom(roomId) {
-        this.clientDb.db(this.env).collection("multiplayer").findOneAndDelete({ roomId: roomId })
     }
 }
 
