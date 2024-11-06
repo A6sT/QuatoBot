@@ -2,6 +2,8 @@
 import axios from 'axios';
 import { EmbedBuilder } from 'discord.js';
 import { getLocale, getGradeColor, isScoreFiltered, convertIntegerToString, client } from './index.js';
+
+// Websocket implementation (ignore for now as new site isn't finished yet)
 /*import WebSocket from 'ws';
 
 const ws = new WebSocket('ws://www.host.com/path');
@@ -17,9 +19,10 @@ ws.on('message', function message(data) {
     if (data == null || data.type == null) { return; }
     switch (data.type) {
         case "new_score":
-            console.log("new score found");
-            // 1. Il faut modifier la fonction registerNewScores pour que le résultat de cette requete y soit adapté
-            // 2. Appeller la fonction seekNewScores (renommer en newScoreProcess) et appeler directement registerNewScores, puis enchainer le process habituel
+            console.log("new score found, this is epic !!!!!!!");
+            // TODO LIST:
+            // 1. Edit registerNewScores() to handle response messages
+            // 2. rename seekNewScores() to "newScoreProcess()", and call it at the end of the registerNewScore()
             break;
         case "connected":
             console.log("Now listening for new scores");
@@ -28,8 +31,8 @@ ws.on('message', function message(data) {
             break;
     }
 });
-// Important: il faut faire attention au cas des utilisateurs qui se register au bot pour les ajouter sur le listener
-/* For websocket implementation, score found response will be like:
+// We will also have to take care of newly registered users to the bot (we need to add them to the ws route)
+/* For websocket implementation, score found response should look like this: (with api V2, this has probably changed and will probably change again in the future)
 {
     "type": "new_score",
     "data": {
@@ -53,12 +56,11 @@ ws.on('message', function message(data) {
 }
 */
 
-// Récuperer et afficher les scores de tout les joueurs link au bot
+// Get and display scores made by users linked to the bot
 export async function main() {
-
     const users = [];
     let dbUsers = await DB.getUsers();
-    dbUsers.forEach(user => {
+    dbUsers.forEach(async function (user) {
         users.push(user);
     })
 
@@ -66,71 +68,71 @@ export async function main() {
     users.forEach(async function (user) {
         seekNewScores(user);
 
-        // Reset les trackeur de rank journalier
-        if ((date.getUTCHours() + (isNaN(user.timezoneOffset) ? 0 : user.timezoneOffset)) % 24 == 0 &&
-            date.getUTCMinutes() >= 0 && date.getUTCMinutes() <= 5 &&
-            (user.dailyRank4k != 0 || user.dailyRank7k != 0)) {
+        // Reset tracker for daily ranking
+        if ((date.getUTCHours() + user.timezoneOffset) % 24 == 0 && date.getUTCMinutes() == 0) {
             DB.resetDailyCounter(user.discordId);
         }
     })
 }
 
-// Rechercher et afficher les nouveaux scores fait par un utilisateur
+// Look for new scores made by the users
 async function seekNewScores(user) {
-    const scoreRegistered = await registerNewScore(user);
+    const scoreRegistered = await registerNewScore(user, true);
     if (scoreRegistered == null) { return; }
 
-    // Un nouveau score a été trouvé
-    const servers = await DB.getServersList(user.server);
+    /// A new score is found
 
-    for (let i = 0; i < servers.length; i++) {
-        let server = servers[i];
-        let personalChannel = await DB.getPersonalChannel(server.serverId, user.discordId);
+    // Send this new score to every channel where it is not filtered
+    if (isScoreFiltered(user.filter, scoreRegistered.score) == false) {
+        const servers = await DB.getServersList(user.server);
 
-        // Envoi du message sur les channels globaux de chaque serveur si le score n'est pas filtré sur ces serveurs
-        if (!isScoreFiltered(user.filter, scoreRegistered.score)) {
+        for (let i = 0; i < servers.length; i++) {
+            let server = servers[i];
+            let personalChannel = await DB.getPersonalChannel(server.serverId, user.discordId);
+
             const serverCache = client.guilds.cache.get(server.serverId);
             if (server.scoreChannel != "") {
-                // Envoie du message uniquement si un channel global est définit
+
+                // Send message to global channel
                 const globalChannel = serverCache.channels.cache.get(server.scoreChannel);
                 if (globalChannel.permissionsFor(serverCache.members.me).toArray().includes("SendMessages")) {
                     await showLatestScore(server, globalChannel, scoreRegistered);
                 }
             }
-        }
 
-        // Envoie du message dans le channel perso si il n'est pas filtré
-        if (personalChannel != null && !isScoreFiltered(personalChannel.filter, scoreRegistered.score)) {
-            const channelPerso = serverCache.channels.cache.get(personalChannel.channel);
-            if (channelPerso.permissionsFor(serverCache.members.me).toArray().includes("SendMessages")) {
-                await showLatestScore(server, channelPerso, scoreRegistered);
+            if (personalChannel != null) {
+
+                // Send message to personal channel
+                const channelPerso = serverCache.channels.cache.get(personalChannel.channel);
+                if (channelPerso.permissionsFor(serverCache.members.me).toArray().includes("SendMessages")) {
+                    await showLatestScore(server, channelPerso, scoreRegistered);
+                }
             }
         }
     }
 }
 
-// Envoyer des requetes à l'API Quaver afin d'enregistrer le score le plus récent d'un utilisateur
-async function registerNewScore(user) {
+// Send request to Quaver's API to see if the latest score is the same as what is in the db
+export async function registerNewScore(user, isSessionManaged) {
     let mode;
     let score, score4k, score7k;
     let globalRank, dailyRank, newGlobalRank, newDailyRank;
 
     await axios.all([
-        axios.get(`https://api.quavergame.com/v2/user/${user.quaverId}/scores/1/recent`)//,
-        //axios.get(`https://api.quavergame.com/v2/user/${user.quaverId}/scores/2/recent`)
+        axios.get('https://api.quavergame.com/v1/users/scores/recent?id=' + user.quaverId + '&mode=1')//,
+        //axios.get('https://api.quavergame.com/v1/users/scores/recent?id=' + user.quaverId + '&mode=2')
     ]).then(axios.spread(async (scoreRes4K, scoreRes7K) => {
-        // Exploitation des informations récupérés
         score4k = scoreRes4K.data.scores[0];
-        //score7k = scoreRes7K.data.scores[0];
+        //score7k = scoreRes7K.data.scores[0]; // 7K is temporarly disabled to prevent more API polling
 
     })).catch(function (error) {
         return;
     });
 
-    // === Déterminer si le score est valide (= le plus récent) ===
+    // === Check if the score is valid (aka the latest) ===
 
-    // Déterimne si le score le plus récent est en 4k ou 7k 
-    // -> Les variables seront adapté en fonction du score le plus récent pour pouvoir prendre en compte tout les modes de jeu
+    // Check if it is 4k or 7k
+    // -> Variable will be adapted according to the game mode
     let latestPlay4K;
     let latestPlay7K;
     let gamemodesPlayed = 0;
@@ -145,26 +147,26 @@ async function registerNewScore(user) {
         gamemodesPlayed++;
     }
 
-    // Déterminer le nombre de modes de jeux auquel l'utilisateur a joué
+    // Check the amount of game mode the user has played
     switch (gamemodesPlayed) {
-        case 0: // Aucun score, le joueur n'a jamais joué
+        case 0: // No score, the user never played
             return;
-        case 1: // Le joueur n'a que joué en 4k ou 7k
+        case 1: // The player either played 4k or 7k 
             latestPlay4K != null ? scoreIs4k = true : scoreIs4k = false;
             break;
-        default: // Le joueur a joué dans les 2 modes de jeu
-            // On récupère le score le plus récent
+        default: // The player played both game mode
+            // We take the latest score
             latestPlay4K.getTime() > latestPlay7K.getTime() ? scoreIs4k = true : scoreIs4k = false;
     }
 
     scoreIs4k ? score = score4k : score = score7k;
-    const newTimeStamp = score.timestamp;
+    const newTimeStamp = score.time;
 
-    // Si le score trouvé correspond au score enregistré précedement
+    // We check if the latest score found is the same as what we have in the database
     if (Math.floor(new Date(newTimeStamp).getTime() / 1000) == Math.floor(user.latestMapPlayedTimestamp.getTime() / 1000)) {
         return;
     }
-    // === Fin des vérifications, il s'agit bien d'un nouveau score ===
+    // === From here, we know that the score we retrieved is a new one ===
 
     const player = await getPlayerInfo(user.quaverId);
     const map = await getMapInfo(score.map.id);
@@ -172,25 +174,26 @@ async function registerNewScore(user) {
     if (scoreIs4k) {
         mode = 4;
         globalRank = user.globalRank4k;
-        newGlobalRank = player.stats_keys4.ranks.global;
+        newGlobalRank = player.keys4.globalRank;
         dailyRank = user.dailyRank4k;
         newDailyRank = dailyRank + globalRank - newGlobalRank;
     } else {
         mode = 7;
         globalRank = user.globalRank7k;
-        newGlobalRank = player.stats_keys7.ranks.global;
+        newGlobalRank = player.keys7.globalRank;
         dailyRank = user.dailyRank7k;
         newDailyRank = dailyRank + globalRank - newGlobalRank;
     }
 
-    // Créer une session pour l'utilisateur si il n'en a pas
+    // Create a game session if the user doesn't have one yet
     const userHaveSession = await DB.userHaveSession(user.discordId);
-    if (!userHaveSession) {
+    if (isSessionManaged && !userHaveSession) {
         await DB.createSession(user.discordId);
     }
 
-    // Préparation de l'objet a utiliser pour enregistrer le score et l'affichage
+    // Prepare object with all informations that will be used to display the score
     const newScore = {
+        id: score.id,
         user: user,
         player: player,
         map: map,
@@ -202,198 +205,38 @@ async function registerNewScore(user) {
         newDailyRank: dailyRank + globalRank - newGlobalRank
     }
 
-    // On enregistre le nouveau score dans la db et dans la session du joueur
+    // We save that score to the database as the new latest score
     await DB.editUser(user.discordId, newTimeStamp, mode, newGlobalRank, newDailyRank);
-    await DB.addScoreToSession(user.discordId, newScore);
+    if (isSessionManaged) {
+        await DB.addScoreToSession(user.discordId, newScore);
+    }
 
+    // Submit score to daily challenge if it isn't "cheated"
+    if (!score.mods_string.includes('NLN') && !score.mods_string.includes('NSV')) {
+        await DB.registerNewDailyScore(newScore);
+    }
     return newScore;
 }
 
-// Récuperer les informations sur une map
+// Get a map infos
 async function getMapInfo(id) {
     let map;
-    await axios.get('https://api.quavergame.com/v2/map/' + id).then(async function (m) {
+    await axios.get('https://api.quavergame.com/v1/maps/' + id).then(async function (m) {
         map = m.data.map;
     })
     return map;
 }
 
-// Récuperer les informations sur un joueur
+// Get a player infos
 async function getPlayerInfo(quaverId) {
     let player;
-    await axios.get('https://api.quavergame.com/v2/user/' + quaverId).then(async function (p) {
+    await axios.get('https://api.quavergame.com/v1/users/full/' + quaverId).then(async function (p) {
         player = p.data.user;
     })
     return player;
 }
 
-// Récuperer les informations sur un clan
-async function getClan(clanId) {
-    let clan;
-    await axios.get('https://api.quavergame.com/v2/clan/' + clanId).then(async function (p) {
-        clan = p.data.clan;
-    })
-    return clan;
-}
-
-function computeModsId(modifiers) {
-    const binaryModList = (modifiers).toString(2)
-    let modIdList = [];
-    let modFound = false;
-    for (let i = binaryModList.length - 1; i >= 0; i--) {
-        if (binaryModList[i] == 1) {
-            modIdList.push(binaryModList.length - i - 1);
-            modFound = true;
-        }
-    }
-
-    let modsStr = "";
-    if (!modFound) { return modsStr; }
-
-    modIdList.forEach(id => {
-        switch (id) {
-            case 0:
-                modsStr += "NSV";
-                break;
-            case 1:
-                modsStr += "0.5x";
-                break;
-            case 2:
-                modsStr += "0.6x";
-                break;
-            case 3:
-                modsStr += "0.7x";
-                break;
-            case 4:
-                modsStr += "0.8x";
-                break;
-            case 5:
-                modsStr += "0.9x";
-                break;
-            case 6:
-                modsStr += "1.1x";
-                break;
-            case 7:
-                modsStr += "1.2x";
-                break;
-            case 8:
-                modsStr += "1.3x";
-                break;
-            case 9:
-                modsStr += "1.4x";
-                break;
-            case 10:
-                modsStr += "1.5x";
-                break;
-            case 11:
-                modsStr += "1.6x";
-                break;
-            case 12:
-                modsStr += "1.7x";
-                break;
-            case 13:
-                modsStr += "1.8x";
-                break;
-            case 14:
-                modsStr += "1.9x";
-                break;
-            case 15:
-                modsStr += "2.0x";
-                break;
-            case 16:
-                modsStr += "Strict";
-                break;
-            case 17:
-                modsStr += "Chill";
-                break;
-            case 18:
-                modsStr += "No Pause";
-                break;
-            case 19:
-                modsStr += "Autoplay";
-                break;
-            case 20:
-                modsStr += "Paused";
-                break;
-            case 21:
-                modsStr += "NF";
-                break;
-            case 22:
-                modsStr += "NLN";
-                break;
-            case 23:
-                modsStr += "RND";
-                break;
-            case 24:
-                modsStr += "0.55x";
-                break;
-            case 25:
-                modsStr += "0.65x";
-                break;
-            case 26:
-                modsStr += "0.75x";
-                break;
-            case 27:
-                modsStr += "0.85x";
-                break;
-            case 28:
-                modsStr += "0.95x";
-                break;
-            case 29:
-                modsStr += "INV";
-                break;
-            case 30:
-                modsStr += "FLN";
-                break;
-            case 31:
-                modsStr += "Mirror";
-                break;
-            case 32:
-                modsStr += "Coop";
-                break;
-            case 33:
-                modsStr += "1.05x";
-                break;
-            case 34:
-                modsStr += "1.15x";
-                break;
-            case 35:
-                modsStr += "1.25x";
-                break;
-            case 36:
-                modsStr += "1.35x";
-                break;
-            case 37:
-                modsStr += "1.45x";
-                break;
-            case 38:
-                modsStr += "1.55x";
-                break;
-            case 39:
-                modsStr += "1.65x";
-                break;
-            case 40:
-                modsStr += "1.75x";
-                break;
-            case 41:
-                modsStr += "1.85x";
-                break;
-            case 42:
-                modsStr += "1.95x";
-                break;
-            case 43:
-                modsStr += "Skill issue";
-                break;
-            case 42:
-                modsStr += "NM";
-                break;
-        }
-        modsStr += " ";
-    })
-    return modsStr;
-}
-
-// Envoyer un message sur un serveur qui affiche le score récent d'un utilisateur
+// Send a message to a server that contains infos about the latest score from a player
 async function showLatestScore(server, channel, newScore) {
     const user = newScore.user,
         player = newScore.player,
@@ -406,17 +249,19 @@ async function showLatestScore(server, channel, newScore) {
         newDailyRank = newScore.newDailyRank,
         lang = server.language;
 
-    // Mise en forme des valeurs du score
+    const playerInfo = player.info;
+
+    // Parsing
     const pr = convertIntegerToString(Math.round(score.performance_rating * 100) / 100);
     const acc = convertIntegerToString(Math.round(score.accuracy * 100) / 100);
-    const ratio = convertIntegerToString(Math.round((score.count_marvelous / (score.count_perfect + score.count_great + score.count_good + score.count_okay + score.count_miss)) * 100) / 100);
+    const ratio = convertIntegerToString(Math.round(score.ratio * 100) / 100);
     let difficulty_rating = Math.round((score.performance_rating / Math.pow(score.accuracy / 98, 6)) * 100) / 100;
 
-    // Determine si le rank du joueur a changé
+    // Check if the user rank has changed
     let rankupMessage = "";
 
     if (newGlobalRank != globalRank) {
-        // Mise en place du message
+        // Creating the message for rank change
         if (newGlobalRank > globalRank) {
             rankupMessage = `🔴 ${(newGlobalRank - globalRank)} ${getLocale(lang, "embedScoreRankLost")}: ${globalRank} -> ${newGlobalRank}`;
         } else {
@@ -427,7 +272,7 @@ async function showLatestScore(server, channel, newScore) {
         rankupMessage += ` (${newDailyRank > 0 ? "+" : ""}${newDailyRank} ${getLocale(lang, "embedScoreToday")})`;
     }
 
-    // Verifier si la map est fail
+    // Check if the map is failed
     let description;
     if (score.grade == 'F') {
         difficulty_rating = '';
@@ -437,58 +282,45 @@ async function showLatestScore(server, channel, newScore) {
         description = getLocale(lang, "embedScoreMapFinished", `<@${user.discordId}>`);
     }
 
-    // Gérer le BPM
+    // Manage BPM and speed modifiers
     let bpm = map.bpm;
-
-    // Calculer le bpm si il y a un modifier 
-    const modifiersString = computeModsId(score.modifiers);
-    const speedModifierPosition = modifiersString.search(/[0-2].[0-9]{1,2}/);
-    
+    const speedModifierPosition = score.mods_string.search(/[0-2].[0-9]{1,2}/);
     if (speedModifierPosition != -1) {
-        let speedModifier = modifiersString.substring(speedModifierPosition);
+        let speedModifier = score.mods_string.substring(speedModifierPosition);
         speedModifier = speedModifier.substring(0, speedModifier.search(/x/));
         bpm *= speedModifier;
         bpm = Math.round(bpm * 100) / 100;
     }
 
-    // Gestion du clan
-    const clan = player.clan_id != null ? await getClan(player.clan_id) : null;
-    const tag = clan != null ? `[${clan.tag}] ` : "";
-
-    // Création du message
+    // Message creation
     let titleMapInfo = `${map.artist} - ${map.title} - [${map.difficulty_name}]`;
     if (titleMapInfo.length > 230) {
         titleMapInfo = `${titleMapInfo.substring(0, 230)}...`;
     }
-    // Création des différents fields du message
     const fields = [
-        { name: 'Performance Rating', value: pr, inline: true },
-        { name: 'Accuracy', value: acc + '%', inline: true },
-        { name: 'Ratio', value: ratio, inline: true },
-        { name: 'Max Combo', value: score.max_combo.toString(), inline: true },
+        { name: 'Performance Rating', value: pr, inline: true }, // PR
+        { name: 'Accuracy', value: acc + '%', inline: true }, // Acc
+        { name: 'Ratio', value: ratio, inline: true }, // Ratio
+        { name: 'Max Combo', value: score.max_combo.toString(), inline: true }, // Max combo
     ]
 
-    // Affichage du BPM, calculé et adapté en fonction du modifier
     if (bpm != 0) {
         fields.push({ name: 'BPM', value: bpm.toString(), inline: true });
     }
 
-    // Affichage des modifiers uniquement si il y en a au moins 1
-    if (modifiersString != "") {
-        fields.push({ name: 'Mods', value: modifiersString, inline: true });
+    // Only display modifiers if there is at least one
+    if (score.mods_string != 'None') {
+        fields.push({ name: 'Mods', value: score.mods_string, inline: true });
     }
 
-    // On affiche le placement global si la map est ranked et que le score est dans le top 50
+    // Only display leaderboard rank if the user is in the top 50
     if (map.ranked_status == 2) {
-        // Comparaison avec tout les scores du top 50
-        await axios.get(`https://api.quavergame.com/v2/scores/${map.md5}/global`).then(async (res) => {
+        await axios.get(`https://api.quavergame.com/v1/scores/map/${map.id}`).then(async (res) => {
             const scores = res.data.scores;
-            let found = false;
 
-            for (let i = 0; i < scores.length && !found; i++) {
+            for (let i = 0; i < scores.length; i++) {
                 if (scores[i].id == score.id) {
-                    fields.push({ name: 'Global', value: `🏆 #${i + 1} of Top ${scores.length}`, inline: true });
-                    found = true;
+                    fields.push({ name: 'Global', value: '🏆 #' + (i + 1).toString() + ' of Top ' + scores.length, inline: true });
                 }
             }
         });
@@ -499,24 +331,25 @@ async function showLatestScore(server, channel, newScore) {
     const color = getGradeColor(score.grade);
 
     const embedScore = new EmbedBuilder()
-        .setColor(color) // Couleur en rapport avec la note
-        .setTitle(`[${mode}K] ${titleMapInfo}${difficulty_rating}`) // Nom de la map et difficulté
-        .setURL(`https://quavergame.com/mapset/map/${map.id}`) // Lien vers le site de la map (si dispo)
-        .setAuthor({ name: `${tag}${player.username}`, iconURL: player.avatar_url, url: `https://quavergame.com/user/${player.id}` }) // Info sur le joueur
+        .setColor(color)
+        .setTitle(`[${mode}K] ${titleMapInfo}${difficulty_rating}`)
+        .setURL(`https://quavergame.com/mapset/map/${map.id}`)
+        .setAuthor({ name: playerInfo.username, iconURL: playerInfo.avatar_url, url: `https://quavergame.com/user/${playerInfo.id}` })
         .setDescription(`${getLocale(lang, "embedScoreCreatedBy", map.creator_username)}\n\n${description}`)
-        .setThumbnail(`https://static.quavergame.com/img/grades/${score.grade}.png`) // Grade
+        .setThumbnail(`https://static.quavergame.com/img/grades/${score.grade}.png`) // Link to the grade image
         .addFields(fields)
-        .setImage(`https://cdn.quavergame.com/mapsets/${map.mapset_id}.jpg`) // Background de la map
+        .setImage(`https://cdn.quavergame.com/mapsets/${map.mapset_id}.jpg`) // Mapset background
+        .setTimestamp()
 
-    // On affiche le message de rankup si le joueur à gagné / perdu des places
-    if (rankupMessage != "") {
-        embedScore.setFooter({ text: `${rankupMessage}` })
+    // Displays rankup message
+    if (rankupMessage != null && rankupMessage.length > 0) {
+        embedScore.setFooter({ text: rankupMessage })
     }
 
-    // Préparation de l'envoie du message
+    // Send message to the channel
     const m = await channel.send({ embeds: [embedScore] });
 
-    // Ajout des réactions
+    // Add emotes
     try {
         // FC
         if (score.count_miss == 0) {
@@ -527,7 +360,7 @@ async function showLatestScore(server, channel, newScore) {
             }
         }
         // PB
-        if (score.is_personal_best == true) {
+        if (score.personal_best == true) {
             await m.react('<:pb:1115302002197536789>');
         }
     } catch (ex) {
@@ -535,4 +368,4 @@ async function showLatestScore(server, channel, newScore) {
     }
 }
 
-export default { main };
+export default { main, registerNewScore };

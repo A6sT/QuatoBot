@@ -20,11 +20,7 @@ export default {
         await interaction.deferReply({ephemeral: true});
 
         let description = `Documentation can be found [here](https://github.com/A6sT/QuaToBot)`;
-        const helpEmbed = new EmbedBuilder()
-            .setColor('#E8E8E8')
-            .setTitle(getLocale(lang, "commandHelpTitle"))
-            .setDescription(description)
             
-        return interaction.editReply({ embeds: [helpEmbed]});
+        return interaction.editReply({ content: description });
     }
 }

@@ -16,30 +16,34 @@ export async function manageSessions() {
 
         // Only the sessions that have at least 5 scores are displayed
         if (session.scores.length >= 5) {
-            const user = await DB.getUser(session.discordId);
-            const servers = await DB.getServersList(user == null ? null : user.server);
-
-            for (let i = 0; i < servers.length; i++) {
-                let server = servers[i];
-                let personalChannel = await DB.getPersonalChannel(server.serverId, user.discordId);
-
-                const serverCache = client.guilds.cache.get(server.serverId);
-                if (server.sessionChannel != "" && !user.filter.includes("hidesession")) {
-
-                    // Send recap in global channel
-                    const globalChannel = serverCache.channels.cache.get(server.sessionChannel);
-                    if (globalChannel.permissionsFor(serverCache.members.me).toArray().includes("SendMessages")) {
-                        await showSession(server.language, globalChannel, session);
+            try {
+                const user = await DB.getUser(session.discordId);
+                const servers = await DB.getServersList(user == null ? null : user.server);
+    
+                for (let i = 0; i < servers.length; i++) {
+                    let server = servers[i];
+                    let personalChannel = await DB.getPersonalChannel(server.serverId, user.discordId);
+    
+                    const serverCache = client.guilds.cache.get(server.serverId);
+                    if (server.sessionChannel != "" && !user.filter.includes("hidesession")) {
+    
+                        // Send recap in global channel
+                        const globalChannel = serverCache.channels.cache.get(server.sessionChannel);
+                        if (globalChannel.permissionsFor(serverCache.members.me).toArray().includes("SendMessages")) {
+                            await showSession(server.language, globalChannel, session);
+                        }
+                    }
+                    if (personalChannel != null && !personalChannel.filter.includes("hidesession")) {
+    
+                        // Send recap in personal channel
+                        const channelPerso = serverCache.channels.cache.get(personalChannel.channel);
+                        if (channelPerso.permissionsFor(serverCache.members.me).toArray().includes("SendMessages")) {
+                            await showSession(server.language, channelPerso, session);
+                        }
                     }
                 }
-                if (personalChannel != null && !personalChannel.filter.includes("hidesession")) {
-
-                    // Send recap in personal channel
-                    const channelPerso = serverCache.channels.cache.get(personalChannel.channel);
-                    if (channelPerso.permissionsFor(serverCache.members.me).toArray().includes("SendMessages")) {
-                        await showSession(server.language, channelPerso, session);
-                    }
-                }
+            } catch(err) {
+                console.log(err);
             }
         }
         DB.destroySession(session.discordId);

@@ -4,8 +4,9 @@ import { Routes } from 'discord-api-types/v9';
 import { commands } from './commands/index.js';
 import { handleCommand } from './helpers/command.js';
 import { Client, GatewayIntentBits, ActivityType, Collection, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
-import { main } from './score.js';
+import { main, registerNewScore } from './score.js';
 import { manageSessions } from './session.js';
+import { dailyChallenge } from './dailychallenge.js';
 import axios from 'axios';
 import DB from './db.js';
 import Chart from './chart.js';
@@ -60,7 +61,10 @@ client.once('ready', function () {
     registerCommands();
 
     setInterval(main, 30 * 1000);
+
     setInterval(manageSessions, parseInt(process.env.REFRESH_SESSION_RATE) * 1000);
+
+    setInterval(dailyChallenge, 60 * 1000);
     console.log("started");
 });
 // ============================== Listeners ==============================
@@ -86,7 +90,15 @@ client.on('interactionCreate', async interaction => {
             interaction.deferUpdate();
             const username = interaction.message.components[0].components[0].options.find(user => { return user.value == interaction.values[0] }).label;
             const message = await linkAccount(interaction.guildId, interaction.user.id, username, interaction.user.username, interaction.values[0]);
-            await interaction.editReply({ content: message, components: []});
+            let response = {
+                content: message[0],
+                ephemeral: true,
+                components: []
+            }
+            if(message[1] != "") {
+                response.files = [message[1]]
+            }
+            return interaction.reply(response);
         }
     }
 
@@ -211,9 +223,9 @@ async function globalMessageAction(title, message) {
 
     const servers = await DB.getServers();
     for (let i = 0; i < servers.length; i++) {
-        if (servers[i].scoreChannel != "") {
+        if (servers[i].announcementChannel != null && servers[i].announcementChannel != "") {
             const server = client.guilds.cache.get(servers[i].serverId);
-            const channel = server.channels.cache.get(servers[i].scoreChannel);
+            const channel = server.channels.cache.get(servers[i].announcementChannel);
             if (channel.permissionsFor(server.members.me).toArray().includes("SendMessages")) {
                 channel.send({ embeds: [embedWarning] });
             }
@@ -224,7 +236,7 @@ async function globalMessageAction(title, message) {
 
 // Convert a number to Quaver difficulty format
 export function convertIntegerToString(number) {
-    if (isNaN(number) || number == "0" || number == 0) { return "0"; }
+    if (!isFinite(number) || number == "0" || number == 0 || number == 'undefined') { return "0"; }
 
     let difstr = number.toString();
 
@@ -354,28 +366,31 @@ export async function linkAccount(serverId, discordId, username, discordTag, qua
     const lang = server.language;
 
     let message = "";
+    let attachment = "";
     await axios.get('https://api.quavergame.com/v2/user/' + quaverId).then(async function (res) {
         const discordIdFound = res.data.user.discord_id;
-        const rank4k = res.data.user.keys4.globalRank;
-        const rank7k = res.data.user.keys7.globalRank;
+        const rank4k = res.data.user.stats_keys4.ranks.global;
+        const rank7k = res.data.user.stats_keys7.ranks.global;
 
         // Check if the Quaver profile has a discord account
         if (discordIdFound == null) {
-            message = `${getLocale(lang, "commandAccountNoDiscordFound", username)}\n*${getLocale(lang, "commandAccountTipsGetId")}*`
+            message = `${getLocale(lang, "commandAccountNoDiscordFound", username)}\n*${getLocale(lang, "commandAccountTipsGetId")}*`;
+            attachment = "./resources/how_to_link.png";
             return;
         }
         // Check if that Discord account is the same as the user who executed the command
         else if (discordIdFound != discordId) {
-            message = `${getLocale(lang, "commandAccountWrongId", username, discordTagFound, discordTag)}\n*${getLocale(lang, "commandAccountTipsGetId")}*`;
+            message = `${getLocale(lang, "commandAccountWrongId", username, discordIdFound, discordTag)}\n*${getLocale(lang, "commandAccountTipsGetId")}*`;
+            attachment = "./resources/how_to_link.png";
             return;
         }
 
         /// The account is valid 
-        await DB.createUser(serverId, discordId, quaverId, rank4k, rank7k);
-
+        let user = await DB.createUser(serverId, discordId, quaverId, rank4k, rank7k);
+        await registerNewScore(user, false);
         message = getLocale(lang, "commandAccountLinked");
     })
-    return message;
+    return [message, attachment];
 }
 
 // Show a Quaver player profile (from /search-player command)
@@ -383,22 +398,20 @@ export async function buildPlayerProfile(serverId, quaverId, defaultmode = '0') 
     const server = await DB.getServer(serverId);
     const lang = server.language;
 
-    let playerRes;
+    let user;
     let graph;
     let clan;
 
     await axios.get('https://api.quavergame.com/v2/user/' + quaverId).then(async function (res) {
-        playerRes = res;
+        user = res.data.user;
     })
-
-    const user = playerRes.data.user;
 
     if (user.clan_id != null) {
         await axios.get(`https://api.quavergame.com/v2/clan/${user.clan_id}`).then(async function (res) {
             clan = res.data.clan;
         })
     }
-    
+
     let userStats;
 
     const buttons = new ActionRowBuilder();
@@ -454,7 +467,7 @@ export async function buildPlayerProfile(serverId, quaverId, defaultmode = '0') 
     // Overall accuracy and ratio
     const overallAccuracy = userStats.overall_accuracy;
     const ratio = userStats.total_marvelous / userStats.total_perfect;
-    fields.push({ name: `Overall Accuracy`, value: `${convertIntegerToString(Math.round(overallAccuracy * 100) / 100)}\nRatio: ${convertIntegerToString(Math.round(ratio * 100) / 100)}`, inline: true });
+    fields.push({ name: `Overall Accuracy`, value: `${convertIntegerToString(Math.round(overallAccuracy * 100) / 100)}\nRatio: ${convertIntegerToString(Math.round(ratio * 100) / 100)}%`, inline: true });
 
     // Clan stuff
     fields.push(blank);

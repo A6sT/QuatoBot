@@ -41,6 +41,8 @@ class DB {
             language: "en",
             sessionChannel: "",
             scoreChannel: "",
+            announcementChannel: "",
+            challengeChannel: "",
             personalChannel: []
         }
         db.collection("server").insertOne(newServer, function (err, res) {
@@ -63,6 +65,25 @@ class DB {
         let updatedServer = {
             $set: {
                 scoreChannel: channelId,
+            }
+        }
+        this.clientDb.db(this.env).collection("server").updateOne({ serverId: serverId }, updatedServer)
+    }
+
+    // Définir le nouveau channel où s'envoie les annonces du bot
+    setAnnouncementChannel(serverId, channelId) {
+        let updatedServer = {
+            $set: {
+                announcementChannel: channelId,
+            }
+        }
+        this.clientDb.db(this.env).collection("server").updateOne({ serverId: serverId }, updatedServer)
+    }
+
+    setChallengeChannel(serverId, channelId) {
+        let updatedServer = {
+            $set: {
+                challengeChannel: channelId,
             }
         }
         this.clientDb.db(this.env).collection("server").updateOne({ serverId: serverId }, updatedServer)
@@ -232,8 +253,9 @@ class DB {
         }
         db.collection("user").insertOne(newUser, function (err, res) {
             if (err) throw err;
-            console.log(`user ${quaverId} (${discordId}) has registered !`);
         })
+        console.log(`user ${quaverId} (${discordId}) has registered !`);
+        return newUser;
     }
 
     // Modifier les informations d'un utilisateur de la db
@@ -311,6 +333,7 @@ class DB {
 
     // Supprimer un utilisateur d'un serveur
     async removeServerFromUser(discordId, serverId) {
+        await this.unsetPersonalChannel(serverId, discordId);
         await this.clientDb.db(this.env).collection("user").updateOne({ discordId: discordId }, { $pull: { server: serverId } });
         await this.deleteUserWithNoServer();
     }
@@ -345,7 +368,7 @@ class DB {
     // Vérifie qu'une session existe pour un utilisateur donné
     async userHaveSession(discordId) {
         const session = await this.getSession(discordId);
-        if (session != null) {
+        if (session != null && session.discordId == discordId) {
             return true;
         }
         return false;
@@ -410,16 +433,22 @@ class DB {
     async addScoreToSession(discordId, score) {
         let session = await this.getSession(discordId);
         if (session == null) { return; }
+        let exist = false;
+        session.scores.forEach(s => {
+            if(s.id == score.id) { exist = true; }
+        })
+        if(exist) { return; }
 
         // Construction de la structure stocké en db
         const newScore = {
+            "id": score.id,
             "mode": score.mode,
             "grade": score.score.grade,
             "performance_rating": score.score.performance_rating,
             "accuracy": score.score.accuracy,
             "max_combo": score.score.max_combo,
-            "ratio": score.score.count_marvelous / (score.score.count_perfect + score.score.count_great + score.score.count_good + score.score.count_okay + score.score.count_miss),
-            "is_personal_best": score.score.is_personal_best,
+            "ratio": score.score.count_marv / score.score.count_perf,
+            "is_personal_best": score.score.personal_best,
             "count_miss": score.score.count_miss
         }
 
@@ -441,6 +470,73 @@ class DB {
     destroySession(discordId) {
         this.clientDb.db(this.env).collection("session").findOneAndDelete({ discordId: discordId });
     }
+
+    // ============================== Daily Challenge ==============================
+    async setDailyChallenge(map) {
+        this.clientDb.db(this.env).collection("daily").deleteMany({});
+        const endDate = new Date();
+        endDate.setHours(0, 0, 0, 0);
+
+        let newDailyChallenge = {
+            mapsetId: map.mapset_id,
+            mapId: map.id,
+            map: map,
+            endTime: endDate.valueOf()/1000 + 86400,
+            scores: []
+        }
+        await this.clientDb.db(this.env).collection("daily").insertOne(newDailyChallenge, function (err, res) {
+            if (err) throw err;
+        })
+    }
+
+    async getDailyChallenge() {
+        return await this.clientDb.db(this.env).collection("daily").findOne({});
+    }
+
+    async registerNewDailyScore(score) {
+        let challenge = await this.getDailyChallenge();
+        if (challenge == null || score.map.id != challenge.mapId) { return; }
+        let oldScore = null;
+        let isPersonalBest = false;
+        for (let i = 0; i < challenge.scores.length && oldScore == null; i++) {
+            let s = challenge.scores[i];
+            if (s.discordId == score.user.discordId) {
+                oldScore = s;
+                isPersonalBest = score.score.performance_rating > s.performance_rating;
+            }
+        }
+
+        if (oldScore != null && !isPersonalBest) { return; }
+
+        let updatedDailyChallenge = {
+            $push: {
+                scores: {
+                    "id": score.id,
+                    "discordId": score.user.discordId,
+                    "quaverIcon": score.player.info.avatar_url,
+                    "quaverName": score.player.info.username,
+                    "clan": score.player.clan,
+                    "grade": score.score.grade,
+                    "performance_rating": score.score.performance_rating,
+                    "accuracy": score.score.accuracy,
+                    "mods": score.score.mods_string,
+                    "max_combo": score.score.max_combo,
+                    "ratio": score.score.count_marv / score.score.count_perf,
+                    "count_miss": score.score.count_miss
+                }
+            }
+        }
+        if (oldScore != null) {
+            let removeOld = {
+                $pull: {
+                    scores: oldScore
+                }
+            }
+            await this.clientDb.db(this.env).collection("daily").updateOne({}, removeOld);
+        }
+        await this.clientDb.db(this.env).collection("daily").updateOne({}, updatedDailyChallenge);
+    }
+
 }
 
 export default new DB();

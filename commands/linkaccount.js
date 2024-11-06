@@ -36,6 +36,9 @@ export default {
 
             // Find the associated name
             const name = interaction.options.getString('username');
+            if (name == null) {
+                return interaction.reply({ content: getLocale(lang, "commandSearchPlayerDoesNotExist"), ephemeral: true });
+            }
 
             // Get all player that match that name
             axios.get('https://api.quavergame.com/v2/user/search/' + name).then(async function (res) {
@@ -57,7 +60,14 @@ export default {
                 else if (infos.length == 1) {
                     // If only one player is found through that request, try to link that player to the bot directly
                     const message = await linkAccount(serverId, accountId, name, interaction.user.username, infos[0].id);
-                    return interaction.reply({ content: message, ephemeral: true });
+                    let response = {
+                        content: message[0],
+                        ephemeral: true
+                    }
+                    if(message[1] != "") {
+                        response.files = [message[1]]
+                    }
+                    return interaction.reply(response);
                 }
                 else {
                     return interaction.reply({ content: getLocale(lang, "commandSearchPlayerDoesNotExist"), ephemeral: true });
